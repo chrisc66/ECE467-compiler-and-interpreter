@@ -21,6 +21,7 @@ target_include_directories(ece467_lexer PRIVATE ${CMAKE_BINARY_DIR}/src)
 add_library(ece467_parser OBJECT ${BISON_ECE467Parser_OUTPUTS})
 target_include_directories(ece467_parser PRIVATE ${CMAKE_SOURCE_DIR}/src)
 target_include_directories(ece467_parser PRIVATE ${CMAKE_BINARY_DIR}/src)
+add_dependencies(ece467_parser ece467_lexer)
 
 find_package(LLVM 10.0 REQUIRED CONFIG)
 
