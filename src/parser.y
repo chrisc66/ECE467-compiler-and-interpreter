@@ -7,9 +7,8 @@
 typedef void* yyscan_t;
 #endif
 
+#include "nodes.hpp"
 #include <memory>
-
-class Node;
 
 }
 
@@ -18,7 +17,6 @@ class Node;
 // this will be added to your parser.cpp file
 
 #include "lexer.hpp"
-#include "nodes.hpp"
 
 static yy::parser::symbol_type yylex(yyscan_t);
 
@@ -36,13 +34,14 @@ template <typename T, typename... Args> static std::unique_ptr<T> make_node(yy::
 %verbose
 %define api.value.type variant
 %define api.token.constructor
+%define api.value.automove
 %define parse.trace
 %define parse.assert
 
 %token <std::string> HI
 %token BYE
 
-%type <Node*> root
+%type <std::unique_ptr<Node>> root
 
 %start root
 
