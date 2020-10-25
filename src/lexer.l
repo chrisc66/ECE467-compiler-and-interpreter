@@ -37,14 +37,55 @@ static int make_symbol(YYSTYPE*, YYSTYPE);
 %option verbose
 %option warn
 
-WS [ \r\n\t]+
-DIGIT [0-9]
+WS [ \t]
+NL [\r\n]
+DIGIT [0-9]+
+LETTER [a-zA-Z0-9]
+IDENTIFIER [_A-Za-z][_0-9A-Za-z]*
+FLOAT [-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?
+
+TRUE true
 
 %%
 
-{WS} { /* pass */ }
+{WS} { INC_COLUMN(1);}
+{NL} { SET_COLUMN(1);}
 
-{DIGIT} { int x = GET_COLUMN(); INC_COLUMN(2); return TOK(HI, x, std::string { yytext, static_cast<size_t>(yyleng) }); }
+{DIGIT} { int x = GET_COLUMN(); INC_COLUMN(yyleng); return TOK(TOK_INTEGER, x, std::string { yytext, static_cast<size_t>(yyleng) }); }
+{FLOAT} { int x = GET_COLUMN(); INC_COLUMN(yyleng); return TOK(TOK_FLOAT, x, std::string { yytext, static_cast<size_t>(yyleng) }); }
+"true" { int x = GET_COLUMN(); INC_COLUMN(4); return TOK(TOK_TRUE, x); }
+"false" { int x = GET_COLUMN(); INC_COLUMN(5); return TOK(TOK_FALSE, x); }
+"(" { int x = GET_COLUMN(); INC_COLUMN(1); return TOK(TOK_LPAREN, x); }
+")" { int x = GET_COLUMN(); INC_COLUMN(1); return TOK(TOK_RPAREN, x); }
+"{" { int x = GET_COLUMN(); INC_COLUMN(1); return TOK(TOK_LBRACE, x); }
+"}" { int x = GET_COLUMN(); INC_COLUMN(1); return TOK(TOK_RBRACE, x); }
+"==" { int x = GET_COLUMN(); INC_COLUMN(2); return TOK(TOK_EQ, x); }
+"!=" { int x = GET_COLUMN(); INC_COLUMN(2); return TOK(TOK_NE, x); }
+"<" { int x = GET_COLUMN(); INC_COLUMN(1); return TOK(TOK_LT, x); }
+">" { int x = GET_COLUMN(); INC_COLUMN(1); return TOK(TOK_GT, x); }
+"<=" { int x = GET_COLUMN(); INC_COLUMN(2); return TOK(TOK_LE, x); }
+">=" { int x = GET_COLUMN(); INC_COLUMN(2); return TOK(TOK_GE, x); }
+"+" { int x = GET_COLUMN(); INC_COLUMN(1); return TOK(TOK_PLUS, x); }
+"-" { int x = GET_COLUMN(); INC_COLUMN(1); return TOK(TOK_MINUS, x); }
+"*" { int x = GET_COLUMN(); INC_COLUMN(1); return TOK(TOK_STAR, x); }
+"/" { int x = GET_COLUMN(); INC_COLUMN(1); return TOK(TOK_SLASH, x); }
+"&" { int x = GET_COLUMN(); INC_COLUMN(1); return TOK(TOK_LOG_AND, x); }
+"||" { int x = GET_COLUMN(); INC_COLUMN(2); return TOK(TOK_LOG_OR, x); }
+"if" { int x = GET_COLUMN(); INC_COLUMN(2); return TOK(TOK_IF, x); }
+"while" { int x = GET_COLUMN(); INC_COLUMN(5); return TOK(TOK_WHILE, x); }
+"for" { int x = GET_COLUMN(); INC_COLUMN(3); return TOK(TOK_FOR, x); }
+"break" { int x = GET_COLUMN(); INC_COLUMN(5); return TOK(TOK_BREAK, x); }
+"continue" { int x = GET_COLUMN(); INC_COLUMN(8); return TOK(TOK_CONTINUE, x); }
+"return" { int x = GET_COLUMN(); INC_COLUMN(6); return TOK(TOK_RETURN, x); }
+"," { int x = GET_COLUMN(); INC_COLUMN(1); return TOK(TOK_COMMA, x); }
+";" { int x = GET_COLUMN(); INC_COLUMN(1); return TOK(TOK_SEMICOLON, x); }
+":" { int x = GET_COLUMN(); INC_COLUMN(1); return TOK(TOK_COLON, x); }
+"?" { int x = GET_COLUMN(); INC_COLUMN(1); return TOK(TOK_QUESTION_MARK, x); }
+"=" { int x = GET_COLUMN(); INC_COLUMN(1); return TOK(TOK_ASSIGN, x); }
+
+{IDENTIFIER} {int x = GET_COLUMN(); INC_COLUMN(yyleng); return TOK(TOK_IDENTIFIER, x, std::string { yytext, static_cast<size_t>(yyleng) }); }
+
+
 
 . { printf("[error] invalid token.\n"); return TOK(YYUNDEF, GET_COLUMN()); }
 

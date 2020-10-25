@@ -1,7 +1,7 @@
 /*
  * UofT ECE 467
- * - student number, first name, last name
- * - student number, first name, last name
+ * - 1002970822, Zichun, Chong
+ * - 1001529358, Chao, Shan
  */
 
 #include "compiler.hpp"
