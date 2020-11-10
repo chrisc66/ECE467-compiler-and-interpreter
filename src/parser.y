@@ -7,8 +7,9 @@
 typedef void* yyscan_t;
 #endif
 
-#include "nodes.hpp"
 #include <memory>
+
+class Node;
 
 }
 
@@ -17,6 +18,7 @@ typedef void* yyscan_t;
 // this will be added to your parser.cpp file
 
 #include "lexer.hpp"
+#include "nodes.hpp"
 
 static yy::parser::symbol_type yylex(yyscan_t);
 
@@ -34,7 +36,6 @@ template <typename T, typename... Args> static std::unique_ptr<T> make_node(yy::
 %verbose
 %define api.value.type variant
 %define api.token.constructor
-%define api.value.automove
 %define parse.trace
 %define parse.assert
 
@@ -43,7 +44,7 @@ template <typename T, typename... Args> static std::unique_ptr<T> make_node(yy::
 
 //identifier, integer, float
 %token <std::string> TOK_IDENTIFIER
-%token <std::string> TOK_INTEGER 
+%token <std::string> TOK_INTEGER
 %token <std::string> TOK_FLOAT
 
 //true, false
@@ -51,28 +52,28 @@ template <typename T, typename... Args> static std::unique_ptr<T> make_node(yy::
 %token TOK_FALSE
 
 //lparen, rparen, lbrace, rbrace
-%token TOK_LPAREN 
+%token TOK_LPAREN
 %token TOK_RPAREN
 %token TOK_LBRACE
 %token TOK_RBRACE
 
 //eq, ne, lt, gt, le, ge
-%token TOK_EQ
-%token TOK_NE
-%token TOK_LT
-%token TOK_GT
-%token TOK_LE
-%token TOK_GE
+%left TOK_EQ
+%left TOK_NE
+%left TOK_LT
+%left TOK_GT
+%left TOK_LE
+%left TOK_GE
 
 //plus, minus, star, slash
-%token TOK_PLUS
-%token TOK_MINUS
-%token TOK_STAR
-%token TOK_SLASH
+%left TOK_PLUS
+%left TOK_MINUS
+%left TOK_STAR
+%left TOK_SLASH
 
 //log_and, log_or
-%token TOK_LOG_AND
-%token TOK_LOG_OR
+%left TOK_LOG_AND
+%left TOK_LOG_OR
 
 //if, while, for, break, continue, return
 %token TOK_IF
@@ -89,29 +90,193 @@ template <typename T, typename... Args> static std::unique_ptr<T> make_node(yy::
 %token TOK_QUESTION_MARK
 
 //assign
-%token TOK_ASSIGN
+%right TOK_ASSIGN
 
 
-
-
-%type <std::unique_ptr<Node>> root
+%type <Node*> root
 
 %start root
 
 %%
 
 root
-	: declarations { $$ = nullptr; }
-	;
+  : function_list                               { printf("root := function_list\n"); }
+  ;
 
-declarations
-	: declarations decl
-	| %empty
-	;
+function_list
+  /* function+ */
+  : function_list_ function  { printf("function_list := function_list_ function\n"); }
+  ;
 
-decl
-	: HI { printf("decl: %s\n", $1.c_str()); }
-	;
+function_list_
+  : function_list { printf("function_list_ := function_list\n"); }
+  | /*epsilon*/ { printf("function_list_ := %%empty\n"); }
+  ;
+
+function
+  : function_decl TOK_SEMICOLON { printf("function := function_decl TOK_SEMICOLON\n"); }
+  | function_defn { printf("function := function_defn\n"); }
+  ;
+
+function_decl
+  : type name TOK_LPAREN parameter_list TOK_RPAREN { printf("function_decl := type name TOK_LPAREN parameter_list TOK_RPAREN\n"); }
+  ;
+
+function_defn
+  : function_decl block { printf("function_defn := function_decl block\n"); }
+  ;
+
+type
+  : TOK_IDENTIFIER { printf("type := TOK_IDENTIFIER\n"); }
+  ;
+
+name
+  : TOK_IDENTIFIER { printf("name := TOK_IDENTIFIER\n"); }
+  ;
+
+parameter_list
+  /* (declaration (comma declaration)*)? */
+  : declaration comma_declaration_star_suite { printf("parameter_list := declaration comma_declaration_star_suite\n"); }
+  | /*epsilon*/ { printf("parameter_list := %%empty\n"); }
+  ;
+
+// self defined suite
+comma_declaration_star_suite
+  /* comma declaration)* */
+  : TOK_COMMA declaration comma_declaration_star_suite { printf("comma_declaration_star_suite := TOK_COMMA declaration comma_declaration_star_suite\n"); }
+  | /*epsilon*/ { printf("comma_declaration_star_suite := %%empty\n"); }
+  ;
+
+block
+  : TOK_LBRACE suite TOK_RBRACE { printf("block := TOK_LBRACE suite TOK_RBRACE\n"); }
+  ;
+
+suite
+  /* (statement)* */
+  : statement suite  { printf("suite := statement suite\n"); }
+  | /*epsilon*/ { printf("suite := %%empty\n"); }
+  ;
+
+declaration
+  : type name { printf("declaration := type name\n"); }
+  ;
+
+statement
+  : single_statement TOK_SEMICOLON { printf("statement := single_statement TOK_SEMICOLON\n"); }
+  |	compound_statement { printf("statement := compound_statement\n"); }
+  ;
+
+single_statement
+  : declaration TOK_ASSIGN expression { printf("single_statement := declaration TOK_ASSIGN expression\n"); }
+  | name TOK_ASSIGN expression { printf("single_statement := name TOK_ASSIGN expression\n"); }
+  | name binary_op TOK_ASSIGN expression { printf("single_statement := name binary_op TOK_ASSIGN expression\n"); }
+  | TOK_BREAK { printf("single_statement := TOK_BREAK\n"); }
+  | TOK_CONTINUE { printf("single_statement := TOK_CONTINUE\n"); }
+  | TOK_RETURN { printf("single_statement := TOK_RETURN\n"); }
+  | TOK_RETURN expression { printf("single_statement := TOK_RETURN expression\n"); }
+  | expression { printf("single_statement := expression\n"); }
+  ;
+
+expression
+  : expression_prime { printf("expression := expression_prime\n"); }
+  | binary_expression { printf("expression := binary_expression\n"); }
+  | unary_expression { printf("expression := unary_expression\n"); }
+  | relational_expression { printf("expression := relational_expression\n"); }
+  | ternary_expression { printf("expression := ternary_expression\n"); }
+  | cast_expression { printf("expression := cast_expression\n"); }
+  | function_call { printf("expression := function_call\n"); }
+  ;
+
+expression_prime
+  : TOK_TRUE { printf("expression_prime := TOK_TRUE\n"); }
+  | TOK_FALSE { printf("expression_prime := TOK_FALSE\n"); }
+  | TOK_INTEGER { printf("expression_prime := TOK_INTEGER\n"); }
+  | TOK_FLOAT { printf("expression_prime := TOK_FLOAT\n"); }
+  | TOK_LPAREN expression TOK_RPAREN { printf("expression_prime := TOK_LPAREN expression TOK_RPAREN\n"); }
+  ;
+
+compound_statement
+  : TOK_IF TOK_LPAREN expression TOK_RPAREN block
+   { printf("expressicompound_statementon_prime := TOK_IF TOK_LPAREN expression TOK_RPAREN block\n"); }
+  /* for lparen single_statement? semicolon expression? semicolon single_statement? rparen block */
+  | TOK_FOR TOK_LPAREN                  TOK_SEMICOLON            TOK_SEMICOLON                  TOK_RPAREN block
+   { printf("compound_statement := TOK_FOR TOK_LPAREN TOK_SEMICOLON TOK_SEMICOLON TOK_RPAREN block\n"); }
+  | TOK_FOR TOK_LPAREN single_statement TOK_SEMICOLON            TOK_SEMICOLON                  TOK_RPAREN block
+   { printf("compound_statement := TOK_FOR TOK_LPAREN single_statement TOK_SEMICOLON TOK_SEMICOLON TOK_RPAREN block\n"); }
+  | TOK_FOR TOK_LPAREN                  TOK_SEMICOLON expression TOK_SEMICOLON                  TOK_RPAREN block
+   { printf("compound_statement := TOK_FOR TOK_LPAREN TOK_SEMICOLON expression TOK_SEMICOLON TOK_RPAREN block\n"); }
+  | TOK_FOR TOK_LPAREN single_statement TOK_SEMICOLON expression TOK_SEMICOLON                  TOK_RPAREN block
+   { printf("compound_statement := TOK_FOR TOK_LPAREN single_statement TOK_SEMICOLON expression TOK_SEMICOLON\n"); }
+  | TOK_FOR TOK_LPAREN                  TOK_SEMICOLON            TOK_SEMICOLON single_statement TOK_RPAREN block
+   { printf("compound_statement := TOK_FOR TOK_LPAREN TOK_SEMICOLON TOK_SEMICOLON single_statement TOK_RPAREN block\n"); }
+  | TOK_FOR TOK_LPAREN single_statement TOK_SEMICOLON            TOK_SEMICOLON single_statement TOK_RPAREN block
+   { printf("compound_statement := TOK_FOR TOK_LPAREN single_statement TOK_SEMICOLON TOK_SEMICOLON single_statement TOK_RPAREN block\n"); }
+  | TOK_FOR TOK_LPAREN                  TOK_SEMICOLON expression TOK_SEMICOLON single_statement TOK_RPAREN block
+   { printf("compound_statement := TOK_FOR TOK_LPAREN TOK_SEMICOLON expression TOK_SEMICOLON single_statement TOK_RPAREN block\n"); }
+  | TOK_FOR TOK_LPAREN single_statement TOK_SEMICOLON expression TOK_SEMICOLON single_statement TOK_RPAREN block
+   { printf("compound_statement := TOK_FOR TOK_LPAREN single_statement TOK_SEMICOLON expression TOK_SEMICOLON single_statement TOK_RPAREN block\n"); }
+  | TOK_WHILE TOK_LPAREN expression TOK_RPAREN block
+   { printf("compound_statement := TOK_WHILE TOK_LPAREN expression TOK_RPAREN block\n"); }
+  ;
+
+binary_expression
+  : expression binary_op expression_prime { printf("binary_expression := expression binary_op expression_prime\n"); }
+  ;
+
+unary_expression
+  : unary_op expression_prime { printf("unary_expression := unary_op expression_prime\n"); }
+  ;
+
+relational_expression
+  : expression relational_op expression_prime { printf("relational_expression := expression relational_op expression_prime\n"); }
+  ;
+
+binary_op
+  : TOK_PLUS { printf("binary_op := TOK_PLUS\n"); }
+  | TOK_MINUS  { printf("binary_op := TOK_MINUS\n"); }
+  | TOK_STAR { printf("binary_op := TOK_STAR\n"); }
+  | TOK_SLASH { printf("binary_op := TOK_SLASH\n"); }
+  | TOK_LOG_AND { printf("binary_op := TOK_LOG_AND\n"); }
+  | TOK_LOG_OR { printf("binary_op := TOK_LOG_OR\n"); }
+  ;
+
+unary_op
+  : TOK_MINUS { printf("unary_op := TOK_MINUS\n"); }
+  ;
+
+relational_op
+  : TOK_EQ { printf("relational_op := TOK_EQ\n"); }
+  | TOK_NE { printf("relational_op := TOK_NE\n"); }
+  | TOK_LT { printf("relational_op := TOK_LT\n"); }
+  | TOK_GT { printf("relational_op := TOK_GT\n"); }
+  | TOK_LE { printf("relational_op := TOK_LE\n"); }
+  | TOK_GE { printf("relational_op := TOK_GE\n"); }
+  ;
+
+ternary_expression
+  : expression TOK_QUESTION_MARK expression TOK_COLON expression_prime { printf("ternary_expression := expression TOK_QUESTION_MARK expression TOK_COLON expression_prime\n"); }
+  ;
+
+cast_expression
+  : TOK_LPAREN type TOK_RPAREN expression_prime { printf("cast_expression := TOK_LPAREN type TOK_RPAREN expression_prime\n"); }
+  ;
+
+function_call
+  /* name lparen (expression (TOK_COMMA expression)*)? rparen */
+  : name TOK_LPAREN comma_expression_star_quesmark_suite TOK_RPAREN { printf("function_call := name TOK_LPAREN comma_expression_star_quesmark_suite TOK_RPAREN\n"); }
+  ;
+
+/* (TOK_COMMA expression)*)? */
+comma_expression_star_quesmark_suite
+  : expression comma_expression_star_suite { printf("comma_expression_star_quesmark_suite := expression comma_expression_star_suite\n"); }
+  | /*epsilon*/ { printf("comma_expression_star_quesmark_suite := %%empty\n"); }
+  ;
+
+/* (TOK_COMMA expression)* */
+comma_expression_star_suite
+  : TOK_COMMA expression comma_expression_star_suite { printf("comma_expression_star_suite := TOK_COMMA expression comma_expression_star_suite\n"); }
+  | /*epsilon*/ { printf("comma_expression_star_suite := %%empty\n"); }
+  ;
 
 %%
 
