@@ -82,6 +82,14 @@ TRUE true
 ":" { int x = GET_COLUMN(); INC_COLUMN(1); return TOK(TOK_COLON, x); }
 "?" { int x = GET_COLUMN(); INC_COLUMN(1); return TOK(TOK_QUESTION_MARK, x); }
 "=" { int x = GET_COLUMN(); INC_COLUMN(1); return TOK(TOK_ASSIGN, x); }
+"+=" { int x = GET_COLUMN(); INC_COLUMN(2); return TOK(TOK_PLUS_ASSIGN, x); }
+"-=" { int x = GET_COLUMN(); INC_COLUMN(2); return TOK(TOK_MINUS_ASSIGN, x); }
+"*=" { int x = GET_COLUMN(); INC_COLUMN(2); return TOK(TOK_STAR_ASSIGN, x); }
+"/=" { int x = GET_COLUMN(); INC_COLUMN(2); return TOK(TOK_SLASH_ASSIGN, x); }
+"int" { int x = GET_COLUMN(); INC_COLUMN(3); return TOK(TOK_TYPE, x); }
+"float" { int x = GET_COLUMN(); INC_COLUMN(5); return TOK(TOK_TYPE, x); }
+"bool" { int x = GET_COLUMN(); INC_COLUMN(4); return TOK(TOK_TYPE, x); }
+"void" { int x = GET_COLUMN(); INC_COLUMN(4); return TOK(TOK_TYPE, x); }
 
 {IDENTIFIER} {int x = GET_COLUMN(); INC_COLUMN(yyleng); return TOK(TOK_IDENTIFIER, x, std::string { yytext, static_cast<size_t>(yyleng) }); }
 

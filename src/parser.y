@@ -91,7 +91,10 @@ template <typename T, typename... Args> static std::unique_ptr<T> make_node(yy::
 
 //assign
 %right TOK_ASSIGN
+%right TOK_PLUS_ASSIGN, TOK_MINUS_ASSIGN, TOK_STAR_ASSIGN, TOK_SLASH_ASSIGN
 
+//type
+%token TOK_TYPE
 
 %type <Node*> root
 
@@ -119,16 +122,18 @@ function
   ;
 
 function_decl
-  : type name TOK_LPAREN parameter_list TOK_RPAREN { printf("function_decl := type name TOK_LPAREN parameter_list TOK_RPAREN\n"); }
+  : TOK_TYPE name TOK_LPAREN parameter_list TOK_RPAREN { printf("function_decl := TOK_TYPE name TOK_LPAREN parameter_list TOK_RPAREN\n"); }
   ;
 
 function_defn
   : function_decl block { printf("function_defn := function_decl block\n"); }
   ;
 
+/*
 type
   : TOK_IDENTIFIER { printf("type := TOK_IDENTIFIER\n"); }
   ;
+*/
 
 name
   : TOK_IDENTIFIER { printf("name := TOK_IDENTIFIER\n"); }
@@ -158,7 +163,7 @@ suite
   ;
 
 declaration
-  : type name { printf("declaration := type name\n"); }
+  : TOK_TYPE name { printf("declaration := TOK_TYPE name\n"); }
   ;
 
 statement
@@ -169,7 +174,7 @@ statement
 single_statement
   : declaration TOK_ASSIGN expression { printf("single_statement := declaration TOK_ASSIGN expression\n"); }
   | name TOK_ASSIGN expression { printf("single_statement := name TOK_ASSIGN expression\n"); }
-  | name binary_op TOK_ASSIGN expression { printf("single_statement := name binary_op TOK_ASSIGN expression\n"); }
+  | name augmented_assign expression { printf("single_statement := name augmented_assign expression\n"); }
   | TOK_BREAK { printf("single_statement := TOK_BREAK\n"); }
   | TOK_CONTINUE { printf("single_statement := TOK_CONTINUE\n"); }
   | TOK_RETURN { printf("single_statement := TOK_RETURN\n"); }
@@ -177,8 +182,16 @@ single_statement
   | expression { printf("single_statement := expression\n"); }
   ;
 
+augmented_assign
+  : TOK_PLUS_ASSIGN { printf("augmented_assign := TOK_PLUS_ASSIGN\n"); }
+  | TOK_MINUS_ASSIGN { printf("augmented_assign := TOK_MINUS_ASSIGN\n"); }
+  | TOK_STAR_ASSIGN { printf("augmented_assign := TOK_STAR_ASSIGN\n"); }
+  | TOK_SLASH_ASSIGN { printf("augmented_assign := TOK_SLASH_ASSIGN\n"); }
+  ;
+
 expression
-  : expression_prime { printf("expression := expression_prime\n"); }
+  : name { printf("expression := name\n"); }
+  | expression_prime { printf("expression := expression_prime\n"); }
   | binary_expression { printf("expression := binary_expression\n"); }
   | unary_expression { printf("expression := unary_expression\n"); }
   | relational_expression { printf("expression := relational_expression\n"); }
@@ -258,7 +271,7 @@ ternary_expression
   ;
 
 cast_expression
-  : TOK_LPAREN type TOK_RPAREN expression_prime { printf("cast_expression := TOK_LPAREN type TOK_RPAREN expression_prime\n"); }
+  : TOK_LPAREN TOK_TYPE TOK_RPAREN expression_prime { printf("cast_expression := TOK_LPAREN TOK_TYPE TOK_RPAREN expression_prime\n"); }
   ;
 
 function_call
