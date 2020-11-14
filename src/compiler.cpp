@@ -63,9 +63,13 @@ int parse(char const* path, std::unique_ptr<Node>& root) {
 }
 
 bool verify_ast(Node* root) {
-	(void) root;
 	// TODO: lab 3
-	return true;
+	bool result = true; 
+	if (root != nullptr){
+		printf("verify_ast(), root != NULL\n");
+		result = root->verify();
+	}
+	return result;
 }
 
 std::unique_ptr<Node> optimize(std::unique_ptr<Node> root) {
@@ -75,7 +79,8 @@ std::unique_ptr<Node> optimize(std::unique_ptr<Node> root) {
 
 void print_ast(Node* root) {
 	// TODO: lab 3
-	(void) root;
+	int indent = 0;
+	root->print(indent);
 	return;
 }
 

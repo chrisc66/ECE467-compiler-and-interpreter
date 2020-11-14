@@ -3,7 +3,7 @@
 // this will be added to the top of your lexer.c file
 
 #include "bridge.hpp"
-
+#include <nodes.hpp>
 #define GET_COLUMN() yyget_extra(yyscanner)
 #define SET_COLUMN(x) yyset_extra((x), yyscanner)
 #define INC_COLUMN(x) yyset_extra(GET_COLUMN() + (x), yyscanner)
@@ -39,22 +39,22 @@ static int make_symbol(YYSTYPE*, YYSTYPE);
 
 WS [ \t]
 NL [\r\n]
-DIGIT [0-9]+
 LETTER [a-zA-Z0-9]
 IDENTIFIER [_A-Za-z][_0-9A-Za-z]*
+INTEGER [-+]?[0-9]+
 FLOAT [-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?
-
-TRUE true
+TYPE (int|float|bool|void|string|double|char|unsigned)
 
 %%
 
 {WS} { INC_COLUMN(1);}
 {NL} { SET_COLUMN(1);}
 
-{DIGIT} { int x = GET_COLUMN(); INC_COLUMN(yyleng); return TOK(TOK_INTEGER, x, std::string { yytext, static_cast<size_t>(yyleng) }); }
+{INTEGER} { int x = GET_COLUMN(); INC_COLUMN(yyleng); return TOK(TOK_INTEGER, x, std::string { yytext, static_cast<size_t>(yyleng) }); }
 {FLOAT} { int x = GET_COLUMN(); INC_COLUMN(yyleng); return TOK(TOK_FLOAT, x, std::string { yytext, static_cast<size_t>(yyleng) }); }
-"true" { int x = GET_COLUMN(); INC_COLUMN(4); return TOK(TOK_TRUE, x); }
-"false" { int x = GET_COLUMN(); INC_COLUMN(5); return TOK(TOK_FALSE, x); }
+{TYPE} {int x = GET_COLUMN(); INC_COLUMN(yyleng); return TOK(TOK_TYPE, x, std::string { yytext, static_cast<size_t>(yyleng) }); }
+"true" { int x = GET_COLUMN(); INC_COLUMN(4); return TOK(TOK_TRUE, x, true); }
+"false" { int x = GET_COLUMN(); INC_COLUMN(5); return TOK(TOK_FALSE, x, false); }
 "(" { int x = GET_COLUMN(); INC_COLUMN(1); return TOK(TOK_LPAREN, x); }
 ")" { int x = GET_COLUMN(); INC_COLUMN(1); return TOK(TOK_RPAREN, x); }
 "{" { int x = GET_COLUMN(); INC_COLUMN(1); return TOK(TOK_LBRACE, x); }
@@ -86,14 +86,7 @@ TRUE true
 "-=" { int x = GET_COLUMN(); INC_COLUMN(2); return TOK(TOK_MINUS_ASSIGN, x); }
 "*=" { int x = GET_COLUMN(); INC_COLUMN(2); return TOK(TOK_STAR_ASSIGN, x); }
 "/=" { int x = GET_COLUMN(); INC_COLUMN(2); return TOK(TOK_SLASH_ASSIGN, x); }
-"int" { int x = GET_COLUMN(); INC_COLUMN(3); return TOK(TOK_TYPE, x); }
-"float" { int x = GET_COLUMN(); INC_COLUMN(5); return TOK(TOK_TYPE, x); }
-"bool" { int x = GET_COLUMN(); INC_COLUMN(4); return TOK(TOK_TYPE, x); }
-"void" { int x = GET_COLUMN(); INC_COLUMN(4); return TOK(TOK_TYPE, x); }
-
 {IDENTIFIER} {int x = GET_COLUMN(); INC_COLUMN(yyleng); return TOK(TOK_IDENTIFIER, x, std::string { yytext, static_cast<size_t>(yyleng) }); }
-
-
 
 . { printf("[error] invalid token.\n"); return TOK(YYUNDEF, GET_COLUMN()); }
 

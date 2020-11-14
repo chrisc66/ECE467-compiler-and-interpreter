@@ -1,0 +1,30 @@
+###############################################
+
+Lab 3
+
+Chao Shan, 1001529358:
+- Verify functions for AST
+- Peer coding for verify function
+
+Zichun Chong, 1002970822:
+- Constructor functions for AST
+- Peer coding for constructors
+
+Design:
+- Restructure productions and regex
+- Class node design and implementation
+
+###############################################
+
+Lab 2
+
+Chao Shan, 1001529358:
+- Resolve SR / RR conflicts in production
+- Peer coding for implementing productions
+
+Zichun Chong, 1002970822:
+- Implement productions in parser.y
+- Peer coding for resolving conflicts
+
+Design:
+- Add a few self-defined production rules that convers EBNF to BNF (handles * and + in regex) and resolve conflicts
