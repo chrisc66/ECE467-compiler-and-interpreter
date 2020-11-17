@@ -37,6 +37,8 @@ static int make_symbol(YYSTYPE*, YYSTYPE);
 %option verbose
 %option warn
 
+/* see https://westes.github.io/flex/manual/Patterns.html */
+
 WS [ \r\n\t]+
 DIGIT [0-9]
 

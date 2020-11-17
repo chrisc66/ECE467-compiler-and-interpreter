@@ -48,7 +48,7 @@ template <typename T, typename... Args> static std::unique_ptr<T> make_node(yy::
 %%
 
 root
-	: declarations { $$ = nullptr; }
+	: declarations { this->root = nullptr; }
 	;
 
 declarations

@@ -3,7 +3,6 @@
 set(SOURCES
 	compiler.cpp
 	nodes.cpp
-	runtime.cpp
 	)
 
 find_package(FLEX)
@@ -33,7 +32,6 @@ llvm_map_components_to_libnames(llvm_libs core interpreter orcjit native)
 add_library(ece467 STATIC ${SOURCES})
 target_include_directories(ece467 PRIVATE ${CMAKE_SOURCE_DIR}/src)
 target_include_directories(ece467 PRIVATE ${CMAKE_BINARY_DIR}/src)
-target_link_libraries(ece467 PUBLIC -rdynamic)
 target_link_libraries(ece467 PRIVATE ece467_lexer)
 target_link_libraries(ece467 PRIVATE ece467_parser)
 target_link_libraries(ece467 PUBLIC ${llvm_libs})
@@ -43,6 +41,7 @@ add_executable(ece467c
 	)
 target_include_directories(ece467c PRIVATE ${CMAKE_SOURCE_DIR}/src)
 target_include_directories(ece467c PRIVATE ${CMAKE_BINARY_DIR}/src)
-target_link_libraries(ece467c PUBLIC -rdynamic)
 target_link_libraries(ece467c PUBLIC ece467)
 target_include_directories(ece467c PRIVATE ${CMAKE_SOURCE_DIR}/src)
+
+add_library(ece467rt SHARED runtime.cpp)
