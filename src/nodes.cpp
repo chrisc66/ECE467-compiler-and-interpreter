@@ -34,7 +34,7 @@ bool rooot::verify(rooot* rooot) {
     // ERROR: main_function
     auto search = function_symbol_table_.find("main");
     if (result && search == function_symbol_table_.end()){
-        print_error_msg(ERROR_ENUM::ERROR_MAIN_FUNCTION, "");
+        print_error_msg(ERROR_ENUM::ERROR_MAIN_FUNCTION, location.begin);
         return false;
     }
     return result;
@@ -127,7 +127,7 @@ bool function_decl::verify(rooot* rooot) {
     std::string int_ = "int";
     std::string float_ = "float";
     if (type_.compare(void_) != 0 && type_.compare(bool_) != 0 && type_.compare(int_) != 0 && type_.compare(float_) != 0){
-        print_error_msg(ERROR_ENUM::ERROR_TYPE_DECL, "");
+        print_error_msg(ERROR_ENUM::ERROR_TYPE_DECL, location.begin);
         return false;
     }
     // ERROR duplicate_decl
@@ -136,7 +136,7 @@ bool function_decl::verify(rooot* rooot) {
         rooot->function_symbol_table_.insert({namee_->identifier_val_, this});
     }
     else {
-        print_error_msg(ERROR_ENUM::ERROR_DUPLICATE_DECL, "");
+        print_error_msg(ERROR_ENUM::ERROR_DUPLICATE_DECL, location.begin);
         return false;
     }
     
@@ -180,9 +180,9 @@ bool function_defn::verify(rooot* rooot) {
         if (block_->return_type_.compare("") == 0){}
         else if (block_->return_type_.compare(function_decl_->type_) != 0) {
             if ( block_->return_type_.compare("void") == 0 || function_decl_->type_.compare("void") != 0){
-                print_error_msg(ERROR_ENUM::ERROR_RETURN_STMT, "");
+                print_error_msg(ERROR_ENUM::ERROR_RETURN_STMT, location.begin);
             } else {
-                print_error_msg(ERROR_ENUM::ERROR_TYPE_RETURN, "");
+                print_error_msg(ERROR_ENUM::ERROR_TYPE_RETURN, location.begin);
             }
             return false;
         }
@@ -309,7 +309,7 @@ bool block::verify(rooot* rooot) {
                     find_return_ = true;
                 } else {
                     if (return_type_ != single_statement_itr->return_type_) {
-                        print_error_msg(ERROR_ENUM::ERROR_TYPE_RETURN, "");
+                        print_error_msg(ERROR_ENUM::ERROR_TYPE_RETURN, location.begin);
                         return false;
                     }
                 }
@@ -321,7 +321,7 @@ bool block::verify(rooot* rooot) {
                     variable_symbol_table_.insert({single_statement_itr->declaration_->namee_->identifier_val_, single_statement_itr->declaration_.get()});
                 }
                 else {
-                    print_error_msg(ERROR_ENUM::ERROR_DUPLICATE_DECL, "");
+                    print_error_msg(ERROR_ENUM::ERROR_DUPLICATE_DECL, location.begin);
                     return false;
                 }
             }
@@ -388,7 +388,7 @@ bool declaration::verify(rooot* rooot) {
     std::string int_ = "int";
     std::string float_ = "float";
     if (type_.compare(bool_) != 0 && type_.compare(int_) != 0 && type_.compare(float_) != 0){
-        print_error_msg(ERROR_ENUM::ERROR_TYPE_DECL, "");
+        print_error_msg(ERROR_ENUM::ERROR_TYPE_DECL, location.begin);
         return false;
     }
     bool result = true;
@@ -804,16 +804,26 @@ bool compound_statement::verify(rooot* rooot) {
     if (selector_ == 1 || selector_ == 10){ // if-statement, while-statement
         std::string stmt_type = expression_->type_;
         if (stmt_type.compare("bool") != 0){
-            print_error_msg(ERROR_ENUM::ERROR_TYPE_BOOL, "");
+            print_error_msg(ERROR_ENUM::ERROR_TYPE_BOOL, location.begin);
             return false;
         }
+        // if (selector_ == 1 && expression_->expression_prime_!= nullptr) {
+        //     std::cout<<"DEAD CODE ELIMINATION: IF WITH CONSTANT EXPRESSSION"<<std::endl;
+        //     exit(1);
+        // }
+
+        // if (selector_ == 10 && expression_->expression_prime_!= nullptr && 
+        //     (expression_->expression_prime_->bool_val_ == false )) {
+        //     std::cout<<"DEAD CODE ELIMINATION: WHILE WITH false EXPRESSSION"<<std::endl;
+        //     exit(1);
+        // }
     }
     if (selector_ >= 2 && selector_ <= 9){ // while-statement
         std::string stmt_type = "empty";
         if (expression_ != nullptr)
             stmt_type = expression_->type_;
         if (stmt_type.compare("bool") != 0 && stmt_type.compare("empty") != 0){
-            print_error_msg(ERROR_ENUM::ERROR_TYPE_BOOL, "");
+            print_error_msg(ERROR_ENUM::ERROR_TYPE_BOOL, location.begin);
             return false;
         }
     }
@@ -868,7 +878,7 @@ bool binary_expression::verify(rooot* rooot) {
     std::string expr_type_1 = expression_->type_;
     std::string expr_type_2 = expression_prime_->type_;
     if (result && expr_type_1.compare(expr_type_2) != 0 && expr_type_1.compare("") != 0 && expr_type_2.compare("") != 0){
-        print_error_msg(ERROR_ENUM::ERROR_TYPE_MISMATCH, "");
+        print_error_msg(ERROR_ENUM::ERROR_TYPE_MISMATCH, location.begin);
         return false;
     }
     return result;
@@ -933,7 +943,7 @@ bool relational_expression::verify(rooot* rooot) {
     std::string expr_type_1 = expression_->type_;
     std::string expr_type_2 = expression_prime_->type_;
     if (result && expr_type_1.compare(expr_type_2) != 0 && expr_type_1.compare("") != 0 && expr_type_2.compare("") != 0){
-        print_error_msg(ERROR_ENUM::ERROR_TYPE_MISMATCH, "");
+        print_error_msg(ERROR_ENUM::ERROR_TYPE_MISMATCH, location.begin);
         return false;
     }
     return result;
@@ -1024,7 +1034,7 @@ bool function_call::verify(rooot* rooot) {
     auto search = rooot->function_symbol_table_.find(namee_->identifier_val_);
     function_decl* search_function_decl = std::get<1>(*search);
     if (search == rooot->function_symbol_table_.end()){
-        print_error_msg(ERROR_ENUM::ERROR_NOT_DECL, "");
+        print_error_msg(ERROR_ENUM::ERROR_NOT_DECL, location.begin);
         return false;
     }
     // ERROR type_arg: type of a function call argument does not match function declaration
@@ -1037,14 +1047,14 @@ bool function_call::verify(rooot* rooot) {
     comma_expression_star_quesmark_suite* it1 = comma_expression_star_quesmark_suite_.get();
     if ( (comma_expression_star_quesmark_suite_ == nullptr && search_function_decl->parameter_list_ != nullptr) ||
         (comma_expression_star_quesmark_suite_ != nullptr && search_function_decl->parameter_list_ == nullptr) ){
-        print_error_msg(ERROR_ENUM::ERROR_TYPE_ARG, "");
+        print_error_msg(ERROR_ENUM::ERROR_TYPE_ARG, location.begin);
         return false;
     }
     else{
         arg_type_1 = comma_expression_star_quesmark_suite_->expression_->expression_prime_->type_;
         arg_type_2 = search_function_decl->parameter_list_->declaration_->namee_->type_;
         if (arg_type_1.compare(arg_type_2) != 0){
-            print_error_msg(ERROR_ENUM::ERROR_TYPE_ARG, "");
+            print_error_msg(ERROR_ENUM::ERROR_TYPE_ARG, location.begin);
             return false;
         }
     }
@@ -1052,7 +1062,7 @@ bool function_call::verify(rooot* rooot) {
     comma_expression_star_suite* it3 = it1->comma_expression_star_suite_.get();
     comma_declaration_star_suite* it2 = search_function_decl->parameter_list_->comma_declaration_star_suite_.get();
     if ( (it3 != nullptr && it2 == nullptr) || (it3 == nullptr && it2 != nullptr)){
-        print_error_msg(ERROR_ENUM::ERROR_TYPE_ARG, "");
+        print_error_msg(ERROR_ENUM::ERROR_TYPE_ARG, location.begin);
         return false;
     }
     else if (it3 == nullptr && it2 == nullptr){}
@@ -1060,7 +1070,7 @@ bool function_call::verify(rooot* rooot) {
         arg_type_1 = it1->expression_->expression_prime_->type_;
         arg_type_2 = it2->declaration_->type_;
         if (arg_type_1.compare(arg_type_2) != 0){
-            print_error_msg(ERROR_ENUM::ERROR_TYPE_ARG, "");
+            print_error_msg(ERROR_ENUM::ERROR_TYPE_ARG, location.begin);
             return false;
         }
     }
@@ -1079,7 +1089,7 @@ bool function_call::verify(rooot* rooot) {
     }
 
     if (!match){
-        print_error_msg(ERROR_ENUM::ERROR_TYPE_ARG, "");
+        print_error_msg(ERROR_ENUM::ERROR_TYPE_ARG, location.begin);
         return false;
     }
     bool result = true;
@@ -1162,7 +1172,7 @@ void comma_expression_star_suite::print(int indent) {
 
 ///////////////////////////////////////// helper functions ///////////////////////////////////////////
 
-void print_error_msg (ERROR_ENUM ERROR_NUM, std::string additional_msg = ""){
+void print_error_msg (ERROR_ENUM ERROR_NUM, yy::position location){
 	std::string error_msg = "";
     std::string error_type = "";
 	switch (ERROR_NUM){
@@ -1206,5 +1216,5 @@ void print_error_msg (ERROR_ENUM ERROR_NUM, std::string additional_msg = ""){
 			error_type = "";
 			error_msg = "Unknown error: ";
 	}
-	std::cout << "Error " << error_type << ": " << error_msg << additional_msg << std::endl;
+	std::cout << "[output] Error " << error_type << ": line " << location << ". " << error_msg << std::endl;
 }

@@ -65,7 +65,7 @@ enum ERROR_ENUM {
 	ERROR_NOT_DECL = 9
 };
 
-void print_error_msg (ERROR_ENUM ERROR_NUM, std::string additional_msg);
+void print_error_msg (ERROR_ENUM ERROR_NUM, yy::position location);
 
 // Class Declarations and Definitions
 class Node;
