@@ -3,8 +3,8 @@
 
 extern "C" {
 
-	void putint(int64_t x) {
-		printf("putint: %ld\n", x);
+	void put_int(int32_t x) {
+		printf("put_int: %d\n", x);
 	}
 
 }
