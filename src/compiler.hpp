@@ -21,6 +21,10 @@ std::unique_ptr<Node> optimize(std::unique_ptr<Node>);
 void print_ast(Node*);
 std::unique_ptr<CompilationUnit> compile(Node*);
 
+llvm::Value * LogErrorV(const char *Str);
+llvm::Function * LogErrorF(const char *Str);
+std::unique_ptr<Node> LogError(const char *Str);
+
 class CompilationUnit {
 public:
 	static void initialize();
@@ -31,12 +35,12 @@ public:
 	std::error_code dump(std::string);
 	int run(int, char**);
 
-private:
 	using MainFunction = std::function<int(int, char**)>;
 
 	std::unique_ptr<llvm::LLVMContext> context;
-	llvm::IRBuilder<> builder;
+	std::unique_ptr<llvm::IRBuilder<>> builder;
 	std::unique_ptr<llvm::Module> module;
+
 	MainFunction main;
 };
 

@@ -2,12 +2,20 @@
 #define ECE467_NODE_HPP_INCLUDED
 
 #include "location.hh"
+#include "llvm/Support/Error.h"
+#include "llvm/IR/LLVMContext.h"
+#include "llvm/IR/IRBuilder.h"
+#include "llvm/IR/Module.h"
+#include "llvm/IR/Value.h"
+#include "llvm/IR/Verifier.h"
+#include <utility>
 #include <memory>
 #include <unordered_map>
 #include <string.h>
 #include <vector>
 #include <iomanip>
 #include <iostream>
+#include "compiler.hpp"
 
 // Token Type Enum
 enum TOK_ENUM {
@@ -65,46 +73,50 @@ enum ERROR_ENUM {
 	ERROR_NOT_DECL = 9
 };
 
-void print_error_msg (ERROR_ENUM ERROR_NUM, yy::position location);
-
 // Class Declarations and Definitions
-class Node;
-class rooot;
-class function_list;
-class function;
-class function_decl;
-class function_defn;
-class namee;
-class parameter_list;
-class comma_declaration_star_suite;
-class block;
-class suite;
-class declaration;
-class statement;
-class single_statement;
-class expression;
-class expression_prime;
-class compound_statement;
-class binary_expression;
-class unary_expression;
-class relational_expression;
-class ternary_expression;
-class cast_expression;
-class function_call;
-class comma_expression_star_quesmark_suite;
-class comma_expression_star_suite;
+class CompilationUnit; // done
+class Node; // done
+class rooot; // done
+class function_list; // done
+class function; // done
+class function_decl; // done
+class function_defn; // done
+class namee; // done
+class parameter_list; // done
+class comma_declaration_star_suite; // done
+class block; // done
+class suite; // done
+class declaration; // done
+class statement; // done
+class single_statement; // done
+class expression; // done
+class expression_prime; // done
+class compound_statement; // done
+class binary_expression; // done
+class unary_expression; // done
+class relational_expression; // done
+class ternary_expression; // done !
+class cast_expression; // done !
+class function_call; // done
+class comma_expression_star_quesmark_suite; // done !
+class comma_expression_star_suite; // done !
+
+void print_error_msg (ERROR_ENUM ERROR_NUM, yy::position location);
 
 ///////////////////////////////////////// base class: Node ///////////////////////////////////////////
 
 class Node {
 public:
 	yy::location location;
+	CompilationUnit * comp_; 
 
 	virtual ~Node();
 
 	virtual bool verify();
 	virtual bool verify(rooot* rooot);
 	virtual void print(int indent);
+	virtual llvm::Value *codegen(rooot* rooot, std::map<std::string, llvm::AllocaInst *> * named_values);
+	void codegen();
 };
 
 ///////////////////////////////////////// root ///////////////////////////////////////////
@@ -114,13 +126,14 @@ public:
 	std::unique_ptr<function_list> function_list_;
 	std::unordered_map<std::string, function_decl*> function_symbol_table_; // namee, function_decl
 	std::unordered_map<std::string, declaration*> variable_symbol_table_; // namee, declaration
-	int block_count_; 
+	int block_count_;
 
 	rooot(std::unique_ptr<function_list> function_list);
 	~rooot();
 
 	bool verify(rooot* rooot) override;
 	void print(int indent) override;
+	llvm::Value * codegen(rooot* rooot, std::map<std::string, llvm::AllocaInst *> * named_values) override;
 };
 
 ///////////////////////////////////////// function_list ///////////////////////////////////////////
@@ -136,6 +149,7 @@ public:
 
 	bool verify(rooot* rooot) override;
 	void print(int indent) override;
+	llvm::Function * codegen(rooot* rooot, std::map<std::string, llvm::AllocaInst *> * named_values) override;
 };
 
 ///////////////////////////////////////// function ///////////////////////////////////////////
@@ -145,6 +159,8 @@ public:
 	std::unique_ptr<function_decl> function_decl_;
 	std::unique_ptr<function_defn> function_defn_;
 
+	std::map<std::string, llvm::AllocaInst *> named_values_;
+
 	// TOK_TYPE namee TOK_LPAREN parameter_list TOK_RPAREN
 	function(std::unique_ptr<function_decl> function_decl);
 	function(std::unique_ptr<function_defn> function_defn);
@@ -152,6 +168,7 @@ public:
 
 	bool verify(rooot* rooot) override;
 	void print(int indent) override;
+	llvm::Function * codegen(rooot* rooot, std::map<std::string, llvm::AllocaInst *> * named_values) override;
 };
 
 ///////////////////////////////////////// function_decl ///////////////////////////////////////////
@@ -162,12 +179,16 @@ public:
 	std::unique_ptr<namee> namee_;
 	std::unique_ptr<parameter_list> parameter_list_;
 
+	std::vector<std::string> parameter_names_; // flattened parameter names
+	std::vector<llvm::Type*> parameter_types_; // flattened parameter types
+
 	// TOK_TYPE namee TOK_LPAREN parameter_list TOK_RPAREN
 	function_decl(std::string TOK_TYPE, std::unique_ptr<namee>namee, std::unique_ptr<parameter_list> parameter_list);
 	~function_decl();
 
 	bool verify(rooot* rooot) override;
 	void print(int indent) override;
+	llvm::Function * codegen(rooot* rooot, std::map<std::string, llvm::AllocaInst *> * named_values) override;
 };
 
 ///////////////////////////////////////// function_defn ///////////////////////////////////////////
@@ -183,6 +204,7 @@ public:
 
 	bool verify(rooot* rooot) override;
 	void print(int indent) override;
+	llvm::Function * codegen(rooot* rooot, std::map<std::string, llvm::AllocaInst *> * named_values) override;
 };
 
 ///////////////////////////////////////// namee ///////////////////////////////////////////
@@ -200,6 +222,7 @@ public:
 
 	bool verify(rooot* rooot) override;
 	void print(int indent) override;
+	llvm::Value * codegen(rooot* rooot, std::map<std::string, llvm::AllocaInst *> * named_values) override;
 };
 
 ///////////////////////////////////////// parameter_list ///////////////////////////////////////////
@@ -215,6 +238,8 @@ public:
 
 	bool verify(rooot* rooot) override;
 	void print(int indent) override;
+	llvm::Value * codegen(rooot* rooot, std::map<std::string, llvm::AllocaInst *> * named_values) override;
+	// llvm::ArrayRef<llvm::Type*> codegen_list (rooot* rooot, std::map<std::string, llvm::AllocaInst *> * named_values); // ?????????? new function with different return type
 };
 
 ///////////////////////////////////////// comma_declaration_star_suite ///////////////////////////////////////////
@@ -230,24 +255,27 @@ public:
 
 	bool verify(rooot* rooot) override;
 	void print(int indent) override;
+	llvm::Value * codegen(rooot* rooot, std::map<std::string, llvm::AllocaInst *> * named_values) override;
 };
 
 ///////////////////////////////////////// block ///////////////////////////////////////////
 
 class block : public Node {
-	public:
-		std::unique_ptr<suite> suite_;
-		std::unordered_map<std::string, declaration*> variable_symbol_table_; // namee, declaration
-		int block_num_;
-		std::string return_type_;
-		bool find_return_;
+public:
+	std::unique_ptr<suite> suite_;
+	std::unordered_map<std::string, declaration*> variable_symbol_table_; // namee, declaration
+	int block_num_;
+	std::string return_type_;
+	bool find_return_;
+	// std::map<std::string, llvm::Value *> named_values_;
 
-		// TOK_LBRACE suite TOK_RBRACE
-		block(std::unique_ptr<suite> suite);
-		~block();
+	// TOK_LBRACE suite TOK_RBRACE
+	block(std::unique_ptr<suite> suite);
+	~block();
 
-		bool verify(rooot* rooot) override;
-		void print(int indent) override;
+	bool verify(rooot* rooot) override;
+	void print(int indent) override;
+	llvm::Value * codegen(rooot* rooot, std::map<std::string, llvm::AllocaInst *> * named_values) override;
 };
 
 ///////////////////////////////////////// suite ///////////////////////////////////////////
@@ -263,6 +291,7 @@ public:
 
 	bool verify(rooot* rooot) override;
 	void print(int indent) override;
+	llvm::Value * codegen(rooot* rooot, std::map<std::string, llvm::AllocaInst *> * named_values) override;
 };
 
 ///////////////////////////////////////// declaration ///////////////////////////////////////////
@@ -278,6 +307,7 @@ public:
 
 	bool verify(rooot* rooot) override;
 	void print(int indent) override;
+	llvm::Value * codegen(rooot* rooot, std::map<std::string, llvm::AllocaInst *> * named_values) override;
 };
 
 ///////////////////////////////////////// statement ///////////////////////////////////////////
@@ -295,6 +325,7 @@ public:
 
 	bool verify(rooot* rooot) override;
 	void print(int indent) override;
+	llvm::Value * codegen(rooot* rooot, std::map<std::string, llvm::AllocaInst *> * named_values) override;
 };
 
 ///////////////////////////////////////// single_statement ///////////////////////////////////////////
@@ -329,6 +360,7 @@ public:
 
 	bool verify(rooot* rooot) override;
 	void print(int indent) override;
+	llvm::Value * codegen(rooot* rooot, std::map<std::string, llvm::AllocaInst *> * named_values) override;
 };
 
 ///////////////////////////////////////// expression ///////////////////////////////////////////
@@ -355,6 +387,7 @@ public:
 
 	bool verify(rooot* rooot) override;
 	void print(int indent) override;
+	llvm::Value *codegen(rooot* rooot, std::map<std::string, llvm::AllocaInst *> * named_values) override;
 };
 
 ///////////////////////////////////////// expression_prime ///////////////////////////////////////////
@@ -384,6 +417,7 @@ public:
 
 	bool verify(rooot* rooot) override;
 	void print(int indent) override;
+	llvm::Value *codegen(rooot* rooot, std::map<std::string, llvm::AllocaInst *> * named_values) override;
 };
 
 ///////////////////////////////////////// compound_statement ///////////////////////////////////////////
@@ -413,6 +447,7 @@ public:
 
 	bool verify(rooot* rooot) override;
 	void print(int indent) override;
+	llvm::Value *codegen(rooot* rooot, std::map<std::string, llvm::AllocaInst *> * named_values) override;
 };
 
 ///////////////////////////////////////// binary_expression ///////////////////////////////////////////
@@ -430,6 +465,7 @@ public:
 
 	bool verify(rooot* rooot) override;
 	void print(int indent) override;
+	llvm::Value *codegen(rooot* rooot, std::map<std::string, llvm::AllocaInst *> * named_values) override;
 };
 
 ///////////////////////////////////////// unary_expression ///////////////////////////////////////////
@@ -446,6 +482,7 @@ public:
 
 	bool verify(rooot* rooot) override;
 	void print(int indent) override;
+	llvm::Value *codegen(rooot* rooot, std::map<std::string, llvm::AllocaInst *> * named_values) override;
 };
 
 ///////////////////////////////////////// relational_expression ///////////////////////////////////////////
@@ -463,6 +500,7 @@ public:
 
 	bool verify(rooot* rooot) override;
 	void print(int indent) override;
+	llvm::Value *codegen(rooot* rooot, std::map<std::string, llvm::AllocaInst *> * named_values) override;
 };
 
 ///////////////////////////////////////// ternary_expression ///////////////////////////////////////////
@@ -480,6 +518,7 @@ public:
 
 	bool verify(rooot* rooot) override;
 	void print(int indent) override;
+	llvm::Value *codegen(rooot* rooot, std::map<std::string, llvm::AllocaInst *> * named_values) override;
 };
 
 ///////////////////////////////////////// cast_expression ///////////////////////////////////////////
@@ -496,6 +535,7 @@ public:
 
 	bool verify(rooot* rooot) override;
 	void print(int indent) override;
+	llvm::Value *codegen(rooot* rooot, std::map<std::string, llvm::AllocaInst *> * named_values) override;
 };
 
 ///////////////////////////////////////// function_call ///////////////////////////////////////////
@@ -506,12 +546,15 @@ public:
 	std::unique_ptr<namee> namee_;
 	std::unique_ptr<comma_expression_star_quesmark_suite> comma_expression_star_quesmark_suite_;
 
+	std::vector<llvm::Value*> arguments_;
+
 	// namee TOK_LPAREN comma_expression_star_quesmark_suite TOK_RPAREN
 	function_call(std::unique_ptr<namee> namee, std::unique_ptr<comma_expression_star_quesmark_suite> comma_expression_star_quesmark_suite);
 	~function_call();
 
 	bool verify(rooot* rooot) override;
 	void print(int indent) override;
+	llvm::Value *codegen(rooot* rooot, std::map<std::string, llvm::AllocaInst *> * named_values) override;
 };
 
 ///////////////////////////////////////// comma_expression_star_quesmark_suite ///////////////////////////////////////////
@@ -527,6 +570,7 @@ public:
 
 	bool verify(rooot* rooot) override;
 	void print(int indent) override;
+	llvm::Value *codegen(rooot* rooot, std::map<std::string, llvm::AllocaInst *> * named_values) override;
 };
 
 ///////////////////////////////////////// comma_expression_star_suite ///////////////////////////////////////////
@@ -542,6 +586,7 @@ public:
 
 	bool verify(rooot* rooot) override;
 	void print(int indent) override;
+	llvm::Value *codegen(rooot* rooot, std::map<std::string, llvm::AllocaInst *> * named_values) override;
 };
 
 #endif // ECE467_NODE_HPP_INCLUDED

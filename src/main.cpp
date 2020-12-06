@@ -47,7 +47,6 @@ int main(int argc, char** argv) {
 		return 0;
 	} else if (lab == 4) {
 		printf("[config] lab 4.\n");
-		CompilationUnit::initialize();
 		std::unique_ptr<Node> root;
 		int ret = parse(argv[2], root);
 		if (ret != 0) {
@@ -58,6 +57,7 @@ int main(int argc, char** argv) {
 			return 1;
 		}
 		root = optimize(std::move(root));
+		CompilationUnit::initialize();
 		std::unique_ptr<CompilationUnit> u = compile(root.get());
 		if (u == nullptr) {
 			printf("[error] failed to compile.\n");

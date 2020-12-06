@@ -86,23 +86,41 @@ void print_ast(Node* root) {
 
 std::unique_ptr<CompilationUnit> compile(Node* root) {
 	std::unique_ptr<CompilationUnit> unit = std::make_unique<CompilationUnit>();
+	root->comp_ = unit.get();
 	if (!unit->process(root)) {
 		return nullptr;
 	}
 	return unit;
 }
 
+llvm::Value * LogErrorV(const char *Str) {
+  LogError(Str);
+  return nullptr;
+}
+
+llvm::Function * LogErrorF(const char *Str) {
+  LogError(Str);
+  return nullptr;
+}
+
+/// LogError* - These are little helper functions for error handling.
+std::unique_ptr<Node> LogError(const char *Str) {
+  fprintf(stderr, "Error: %s\n", Str);
+  return nullptr;
+}
+
 void CompilationUnit::initialize() {
 	llvm::InitializeNativeTarget();
 }
 
-CompilationUnit::CompilationUnit() : context(std::make_unique<llvm::LLVMContext>()), builder(*this->context) {
-	this->module = std::make_unique<llvm::Module>("ece467", *this->context);
+CompilationUnit::CompilationUnit() : context(std::make_unique<llvm::LLVMContext>()), builder(std::make_unique<llvm::IRBuilder<>>(*context)) {
+	module = std::make_unique<llvm::Module>("ece467", *context);
 }
 
 bool CompilationUnit::process(Node* root) {
 	(void) root;
 	// TODO: lab 4
+	root->codegen();
 	llvm::verifyModule(*this->module, &llvm::errs());
 	return true;
 }
