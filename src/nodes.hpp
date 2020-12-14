@@ -457,10 +457,10 @@ public:
 	std::string type_;
 	std::unique_ptr<expression> expression_;
 	TOK_ENUM binary_op_;
-	std::unique_ptr<expression_prime> expression_prime_;
+	std::unique_ptr<expression> expression_prime_;
 
 	// expression binary_op expression_prime
-	binary_expression(std::unique_ptr<expression> expression, TOK_ENUM binary_op, std::unique_ptr<expression_prime> expression_prime);
+	binary_expression(std::unique_ptr<expression> expression_1, TOK_ENUM binary_op, std::unique_ptr<expression> expression_2);
 	~binary_expression();
 
 	bool verify(rooot* rooot) override;
@@ -474,10 +474,10 @@ class unary_expression : public Node {
 public:
 	std::string type_;
 	TOK_ENUM unary_op_;
-	std::unique_ptr<expression_prime> expression_prime_;
+	std::unique_ptr<expression> expression_prime_;
 
 	// unary_op expression_prime
-	unary_expression(TOK_ENUM unary_op, std::unique_ptr<expression_prime> expression_prime);
+	unary_expression(TOK_ENUM unary_op, std::unique_ptr<expression> expression_prime);
 	~unary_expression();
 
 	bool verify(rooot* rooot) override;
@@ -492,10 +492,10 @@ public:
 	std::string type_;
 	std::unique_ptr<expression> expression_;
 	TOK_ENUM relational_op_;
-	std::unique_ptr<expression_prime> expression_prime_;
+	std::unique_ptr<expression> expression_prime_;
 
 	// expression relational_op expression_prime
-	relational_expression(std::unique_ptr<expression> expression, TOK_ENUM relational_op, std::unique_ptr<expression_prime> expression_prime);
+	relational_expression(std::unique_ptr<expression> expression_1, TOK_ENUM relational_op, std::unique_ptr<expression> expression_2);
 	~relational_expression();
 
 	bool verify(rooot* rooot) override;
@@ -510,10 +510,10 @@ public:
 	std::string type_;
 	std::unique_ptr<expression> expression_1_;
 	std::unique_ptr<expression> expression_2_;
-	std::unique_ptr<expression_prime> expression_prime_;
+	std::unique_ptr<expression> expression_prime_;
 
 	// expression TOK_QUESTION_MARK expression TOK_COLON expression_prime
-	ternary_expression(std::unique_ptr<expression> expression_1, std::unique_ptr<expression> expression_2, std::unique_ptr<expression_prime> expression_prime);
+	ternary_expression(std::unique_ptr<expression> expression_1, std::unique_ptr<expression> expression_2, std::unique_ptr<expression> expression_prime);
 	~ternary_expression();
 
 	bool verify(rooot* rooot) override;
@@ -527,10 +527,10 @@ class cast_expression : public Node {
 public:
 
 	std::string type_;
-	std::unique_ptr<expression_prime> expression_prime_;
+	std::unique_ptr<expression> expression_prime_;
 
 	// TOK_LPAREN TOK_TYPE TOK_RPAREN expression_prime
-	cast_expression(std::string TOK_TYPE, std::unique_ptr<expression_prime> expression_prime);
+	cast_expression(std::string TOK_TYPE, std::unique_ptr<expression> expression_prime);
 	~cast_expression();
 
 	bool verify(rooot* rooot) override;

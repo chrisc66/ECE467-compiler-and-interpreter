@@ -1420,11 +1420,11 @@ llvm::Value *compound_statement::codegen(rooot *rooot, std::map<std::string, llv
 
 ///////////////////////////////////////// binary_expression ///////////////////////////////////////////
 
-binary_expression::binary_expression(std::unique_ptr<expression> expression, TOK_ENUM binary_op, std::unique_ptr<expression_prime> expression_prime) : Node()
+binary_expression::binary_expression(std::unique_ptr<expression> expression_1, TOK_ENUM binary_op, std::unique_ptr<expression> expression_2) : Node()
 {
-    expression_ = std::move(expression);
+    expression_ = std::move(expression_1);
     binary_op_ = binary_op;
-    expression_prime_ = std::move(expression_prime);
+    expression_prime_ = std::move(expression_2);
     type_ = expression_prime_->type_;
 }
 
@@ -1493,7 +1493,7 @@ llvm::Value *binary_expression::codegen(rooot *rooot, std::map<std::string, llvm
 
 ///////////////////////////////////////// unary_expression ///////////////////////////////////////////
 
-unary_expression::unary_expression(TOK_ENUM unary_op, std::unique_ptr<expression_prime> expression_prime) : Node()
+unary_expression::unary_expression(TOK_ENUM unary_op, std::unique_ptr<expression> expression_prime) : Node()
 {
     unary_op_ = unary_op;
     expression_prime_ = std::move(expression_prime);
@@ -1537,11 +1537,11 @@ llvm::Value *unary_expression::codegen(rooot *rooot, std::map<std::string, llvm:
 
 ///////////////////////////////////////// relational_expression ///////////////////////////////////////////
 
-relational_expression::relational_expression(std::unique_ptr<expression> expression, TOK_ENUM relational_op, std::unique_ptr<expression_prime> expression_prime) : Node()
+relational_expression::relational_expression(std::unique_ptr<expression> expression_1, TOK_ENUM relational_op, std::unique_ptr<expression> expression_2) : Node()
 {
-    expression_ = std::move(expression);
+    expression_ = std::move(expression_1);
     relational_op_ = relational_op;
-    expression_prime_ = std::move(expression_prime);
+    expression_prime_ = std::move(expression_2);
     type_ = "bool";
 }
 
@@ -1617,7 +1617,7 @@ llvm::Value *relational_expression::codegen(rooot *rooot, std::map<std::string, 
 
 ///////////////////////////////////////// ternary_expression ///////////////////////////////////////////
 
-ternary_expression::ternary_expression(std::unique_ptr<expression> expression_1, std::unique_ptr<expression> expression_2, std::unique_ptr<expression_prime> expression_prime) : Node()
+ternary_expression::ternary_expression(std::unique_ptr<expression> expression_1, std::unique_ptr<expression> expression_2, std::unique_ptr<expression> expression_prime) : Node()
 {
     expression_1_ = std::move(expression_1);
     expression_2_ = std::move(expression_2);
@@ -1698,7 +1698,7 @@ llvm::Value *ternary_expression::codegen(rooot *rooot, std::map<std::string, llv
 
 ///////////////////////////////////////// cast_expression ///////////////////////////////////////////
 
-cast_expression::cast_expression(std::string TOK_TYPE, std::unique_ptr<expression_prime> expression_prime) : Node()
+cast_expression::cast_expression(std::string TOK_TYPE, std::unique_ptr<expression> expression_prime) : Node()
 {
     type_ = TOK_TYPE;
     expression_prime_ = std::move(expression_prime);

@@ -270,40 +270,40 @@ compound_statement
   ;
 
 binary_expression
-  : expression TOK_PLUS expression_prime { $$ = make_node<binary_expression>(@$, std::move($1), TOK_ENUM::TOK_PLUS, std::move($3)); printf("binary_expression := expression TOK_PLUS expression_prime\n"); }
-  | expression TOK_MINUS expression_prime { $$ = make_node<binary_expression>(@$, std::move($1), TOK_ENUM::TOK_MINUS, std::move($3)); printf("binary_expression := expression TOK_MINUS expression_prime\n"); }
-  | expression TOK_STAR expression_prime { $$ = make_node<binary_expression>(@$, std::move($1), TOK_ENUM::TOK_STAR, std::move($3)); printf("binary_expression := expression TOK_STAR expression_prime\n"); }
-  | expression TOK_SLASH expression_prime { $$ = make_node<binary_expression>(@$, std::move($1), TOK_ENUM::TOK_SLASH, std::move($3)); printf("binary_expression := expression TOK_SLASH expression_prime\n"); }
-  | expression TOK_LOG_AND expression_prime { $$ = make_node<binary_expression>(@$, std::move($1), TOK_ENUM::TOK_LOG_AND, std::move($3)); printf("binary_expression := expression TOK_LOG_AND expression_prime\n"); }
-  | expression TOK_LOG_OR expression_prime { $$ = make_node<binary_expression>(@$, std::move($1), TOK_ENUM::TOK_LOG_OR, std::move($3)); printf("binary_expression := expression TOK_LOG_OR expression_prime\n"); }
+  : expression TOK_PLUS expression { $$ = make_node<binary_expression>(@$, std::move($1), TOK_ENUM::TOK_PLUS, std::move($3)); printf("binary_expression := expression TOK_PLUS expression\n"); }
+  | expression TOK_MINUS expression { $$ = make_node<binary_expression>(@$, std::move($1), TOK_ENUM::TOK_MINUS, std::move($3)); printf("binary_expression := expression TOK_MINUS expression\n"); }
+  | expression TOK_STAR expression { $$ = make_node<binary_expression>(@$, std::move($1), TOK_ENUM::TOK_STAR, std::move($3)); printf("binary_expression := expression TOK_STAR expression\n"); }
+  | expression TOK_SLASH expression { $$ = make_node<binary_expression>(@$, std::move($1), TOK_ENUM::TOK_SLASH, std::move($3)); printf("binary_expression := expression TOK_SLASH expression\n"); }
+  | expression TOK_LOG_AND expression { $$ = make_node<binary_expression>(@$, std::move($1), TOK_ENUM::TOK_LOG_AND, std::move($3)); printf("binary_expression := expression TOK_LOG_AND expression\n"); }
+  | expression TOK_LOG_OR expression { $$ = make_node<binary_expression>(@$, std::move($1), TOK_ENUM::TOK_LOG_OR, std::move($3)); printf("binary_expression := expression TOK_LOG_OR expression\n"); }
   ;
 
 unary_expression
-  : TOK_MINUS expression_prime { $$ = make_node<unary_expression>(@$, TOK_ENUM::TOK_MINUS, std::move($2)); printf("unary_expression := TOK_MINUS expression_prime\n"); }
+  : TOK_MINUS expression { $$ = make_node<unary_expression>(@$, TOK_ENUM::TOK_MINUS, std::move($2)); printf("unary_expression := TOK_MINUS expression\n"); }
   ;
 
 relational_expression
-  : expression TOK_EQ expression_prime { $$ = make_node<relational_expression>(@$, std::move($1), TOK_ENUM::TOK_EQ, std::move($3)); printf("relational_expression := expression TOK_EQ expression_prime\n"); }
-  | expression TOK_NE expression_prime { $$ = make_node<relational_expression>(@$, std::move($1), TOK_ENUM::TOK_NE, std::move($3)); printf("relational_expression := expression TOK_NE expression_prime\n"); }
-  | expression TOK_LT expression_prime { $$ = make_node<relational_expression>(@$, std::move($1), TOK_ENUM::TOK_LT, std::move($3)); printf("relational_expression := expression TOK_LT expression_prime\n"); }
-  | expression TOK_GT expression_prime { $$ = make_node<relational_expression>(@$, std::move($1), TOK_ENUM::TOK_GT, std::move($3)); printf("relational_expression := expression TOK_GT expression_prime\n"); }
-  | expression TOK_LE expression_prime { $$ = make_node<relational_expression>(@$, std::move($1), TOK_ENUM::TOK_LE, std::move($3)); printf("relational_expression := expression TOK_LE expression_prime\n"); }
-  | expression TOK_GE expression_prime { $$ = make_node<relational_expression>(@$, std::move($1), TOK_ENUM::TOK_GE, std::move($3)); printf("relational_expression := expression TOK_GE expression_prime\n"); }
+  : expression TOK_EQ expression { $$ = make_node<relational_expression>(@$, std::move($1), TOK_ENUM::TOK_EQ, std::move($3)); printf("relational_expression := expression TOK_EQ expression\n"); }
+  | expression TOK_NE expression { $$ = make_node<relational_expression>(@$, std::move($1), TOK_ENUM::TOK_NE, std::move($3)); printf("relational_expression := expression TOK_NE expression\n"); }
+  | expression TOK_LT expression { $$ = make_node<relational_expression>(@$, std::move($1), TOK_ENUM::TOK_LT, std::move($3)); printf("relational_expression := expression TOK_LT expression\n"); }
+  | expression TOK_GT expression { $$ = make_node<relational_expression>(@$, std::move($1), TOK_ENUM::TOK_GT, std::move($3)); printf("relational_expression := expression TOK_GT expression\n"); }
+  | expression TOK_LE expression { $$ = make_node<relational_expression>(@$, std::move($1), TOK_ENUM::TOK_LE, std::move($3)); printf("relational_expression := expression TOK_LE expression\n"); }
+  | expression TOK_GE expression { $$ = make_node<relational_expression>(@$, std::move($1), TOK_ENUM::TOK_GE, std::move($3)); printf("relational_expression := expression TOK_GE expression\n"); }
   ;
 
 ternary_expression
-  : expression TOK_QUESTION_MARK expression TOK_COLON expression_prime { $$ =  make_node<ternary_expression>(@$, std::move($1), std::move($3), std::move($5)); printf("ternary_expression := expression TOK_QUESTION_MARK expression TOK_COLON expression_prime\n"); }
+  : expression TOK_QUESTION_MARK expression TOK_COLON expression { $$ =  make_node<ternary_expression>(@$, std::move($1), std::move($3), std::move($5)); printf("ternary_expression := expression TOK_QUESTION_MARK expression TOK_COLON expression\n"); }
   ;
 
 cast_expression
-  : TOK_LPAREN TOK_TYPE TOK_RPAREN expression_prime { 
+  : TOK_LPAREN TOK_TYPE TOK_RPAREN expression { 
       // if (($2.compare("int") != 0) && ($2.compare("float") != 0) && ($2.compare("bool") != 0)) {
       //     // raise type_decl flag
       //     // declaration should add a type_decl flag
       //     printf(" cast_expression type_decl error !!!!!!!!!!!!!!!!!!!!!!!!!!\n");
       //     exit(1);
       // }
-      $$ = make_node<cast_expression>(@$, $2, std::move($4)); printf("cast_expression := TOK_LPAREN TOK_TYPE TOK_RPAREN expression_prime\n"); 
+      $$ = make_node<cast_expression>(@$, $2, std::move($4)); printf("cast_expression := TOK_LPAREN TOK_TYPE TOK_RPAREN expression\n"); 
     }
   ;
 
