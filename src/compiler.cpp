@@ -121,7 +121,7 @@ bool CompilationUnit::process(Node* root) {
 	(void) root;
 	// TODO: lab 4
 	root->codegen();
-	llvm::verifyModule(*this->module, &llvm::errs());
+	llvm::verifyModule(*module, &llvm::errs());
 	return true;
 }
 
