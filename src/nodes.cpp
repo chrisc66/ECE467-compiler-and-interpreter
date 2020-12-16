@@ -23,19 +23,19 @@ void Node::print(int indent) {}
 
 void Node::codegen()
 {
-    printf("Entering Node::codegen\n");
+    // printf("Entering Node::codegen\n");
     rooot *rooot_ = dynamic_cast<rooot *>(this);
     std::map<std::string, llvm::AllocaInst *> empty_named_values;
     this->codegen(rooot_, empty_named_values);
-    printf("Leaving Node::codegen\n");
+    // printf("Leaving Node::codegen\n");
     return;
 }
 
 llvm::Value *Node::codegen(rooot *rooot, std::map<std::string, llvm::AllocaInst *> &named_values)
 {
-    printf("Entering Node::codegen\n");
+    // printf("Entering Node::codegen\n");
     auto ret = rooot->codegen(rooot, named_values);
-    printf("Leaving Node::codegen\n");
+    // printf("Leaving Node::codegen\n");
     return ret; 
 }
 
@@ -76,9 +76,9 @@ void rooot::print(int indent)
 
 llvm::Value *rooot::codegen(rooot *rooot, std::map<std::string, llvm::AllocaInst *> &named_values)
 {
-    printf("Entering rooot::codegen\n");
+    // printf("Entering rooot::codegen\n");
     auto ret = function_list_->codegen(rooot, named_values);
-    printf("Leaving rooot::codegen\n");
+    // printf("Leaving rooot::codegen\n");
     return ret;
 }
 
@@ -114,11 +114,11 @@ void function_list::print(int indent)
 
 llvm::Function *function_list::codegen(rooot *rooot, std::map<std::string, llvm::AllocaInst *> &named_values)
 {
-    printf("Entering function_list::codegen\n");
+    // printf("Entering function_list::codegen\n");
     function_->codegen(rooot, named_values);
     if (function_list_prime_ != nullptr)
         function_list_prime_->codegen(rooot, named_values);
-    printf("Leaving function_list::codegen\n");
+    // printf("Leaving function_list::codegen\n");
     return nullptr;
 }
 
@@ -160,7 +160,7 @@ void function::print(int indent)
 
 llvm::Function *function::codegen(rooot *rooot, std::map<std::string, llvm::AllocaInst *> &named_values)
 {
-    printf("Entering function::codegen\n");
+    // printf("Entering function::codegen\n");
     std::string function_name = "";
     if (function_decl_ != nullptr)
         function_name = function_decl_->namee_->identifier_val_;
@@ -170,40 +170,14 @@ llvm::Function *function::codegen(rooot *rooot, std::map<std::string, llvm::Allo
         return LogErrorF("Function name does not exist 1.");
     llvm::Function *TheFunction = getFunction(rooot, function_name, named_values);
 
-    if (TheFunction == nullptr)
-    {
-        if (function_decl_ != nullptr){
-            TheFunction = function_decl_->codegen(rooot, named_values_);
-        }
-        else if (function_defn_ != nullptr){
-            TheFunction = function_defn_->function_decl_->codegen(rooot, named_values_);
-        }
-        else
-            return LogErrorF("Function name does not exist 2.");
+    if (TheFunction == nullptr){
+        return LogErrorF("Function name does not exist 2.");
     }
-    else {/* do nothing */}
-
-    if (!TheFunction->empty())
-        return LogErrorF("Function cannot be redefined 3.");
-
-    llvm::BasicBlock *BB = llvm::BasicBlock::Create(*(rooot->comp_->context), "entry", TheFunction);
-    rooot->comp_->builder->SetInsertPoint(BB);
-    named_values_.clear();
-    for (auto &Arg : TheFunction->args()) 
-    {
-        llvm::AllocaInst *Alloca = CreateEntryBlockAlloca(rooot, TheFunction, Arg.getName(), Arg.getType());
-        rooot->comp_->builder->CreateStore(&Arg, Alloca);
-        named_values_[std::string(Arg.getName())] = Alloca;
+    if (function_defn_ != nullptr){
+        TheFunction = function_defn_->codegen(rooot, named_values_);
     }
 
-    if (function_defn_ != nullptr && function_defn_->block_ != nullptr)
-    {
-        function_defn_->block_->codegen(rooot, named_values_);
-    }
-    if (BB->getTerminator() == nullptr && TheFunction->getReturnType()->isVoidTy()) {
-        rooot->comp_->builder->CreateRetVoid();
-    }
-    printf("Leaving function::codegen\n");
+    // printf("Leaving function::codegen\n");
     llvm::verifyFunction(*TheFunction);
     return TheFunction;
 
@@ -269,7 +243,7 @@ void function_decl::print(int indent)
 
 llvm::Function *function_decl::codegen(rooot *rooot, std::map<std::string, llvm::AllocaInst *> &named_values)
 {
-    printf("Entering function_decl::codegen\n");
+    // printf("Entering function_decl::codegen\n");
     // build parameter_names_ and parameter_types_
     parameter_names_.clear();
     parameter_types_.clear();
@@ -314,7 +288,7 @@ llvm::Function *function_decl::codegen(rooot *rooot, std::map<std::string, llvm:
     unsigned Idx = 0;
     for (auto &Arg : function->args())
         Arg.setName(parameter_names_[Idx++]);
-    printf("Leaving function_decl::codegen\n");
+    // printf("Leaving function_decl::codegen\n");
     return function;
 }
 
@@ -362,12 +336,30 @@ void function_defn::print(int indent)
 
 llvm::Function *function_defn::codegen(rooot *rooot, std::map<std::string, llvm::AllocaInst *> &named_values)
 {
-    printf("Entering function_defn::codegen\n");
-    llvm::Function *function_F = function_decl_->codegen(rooot, named_values);
-    if (function_F == nullptr)
-        LogErrorF("Empty function_decl_ within function_defn");
-    printf("Leaving function_defn::codegen\n");
-    return function_F;
+    // printf("Entering function_defn::codegen\n");
+    std::string function_name = function_decl_->namee_->identifier_val_;
+    llvm::Function *TheFunction = getFunction(rooot, function_name, named_values);
+    if (TheFunction == nullptr)
+        TheFunction = function_decl_->codegen(rooot, named_values);
+
+    llvm::BasicBlock *BB = llvm::BasicBlock::Create(*(rooot->comp_->context), "entry", TheFunction);
+    rooot->comp_->builder->SetInsertPoint(BB);
+    named_values.clear();
+    for (auto &Arg : TheFunction->args()) 
+    {
+        llvm::AllocaInst *Alloca = CreateEntryBlockAlloca(rooot, TheFunction, Arg.getName(), Arg.getType());
+        rooot->comp_->builder->CreateStore(&Arg, Alloca);
+        named_values[std::string(Arg.getName())] = Alloca;
+    }
+
+    if (block_ != nullptr)
+        block_->codegen(rooot, named_values);
+    if (BB->getTerminator() == nullptr && TheFunction->getReturnType()->isVoidTy()) {
+        rooot->comp_->builder->CreateRetVoid();
+    }
+
+    // printf("Leaving function_defn::codegen\n");
+    return TheFunction;
 }
 
 ///////////////////////////////////////// namee ///////////////////////////////////////////
@@ -396,12 +388,12 @@ void namee::print(int indent)
 
 llvm::Value *namee::codegen(rooot *rooot, std::map<std::string, llvm::AllocaInst *> &named_values)
 {
-    printf("Entering namee::codegen\n");
+    // printf("Entering namee::codegen\n");
     llvm::Value *V = named_values[identifier_val_];
     if (V == nullptr)
         LogErrorV("Emptyy value within namee name");
     llvm::Value * ret = rooot->comp_->builder->CreateLoad(V, identifier_val_.c_str());
-    printf("Leaving namee::codegen\n");
+    // printf("Leaving namee::codegen\n");
     return ret;
 }
 
@@ -558,11 +550,11 @@ void block::print(int indent)
 
 llvm::Value *block::codegen(rooot *rooot, std::map<std::string, llvm::AllocaInst *> &named_values)
 {
-    printf("Entering block::codegen\n");
+    // printf("Entering block::codegen\n");
     llvm::Value *suite_V = suite_->codegen(rooot, named_values);
     if (suite_V == nullptr)
         LogErrorV("Empty suite_ within block");
-    printf("Leaving block::codegen\n");
+    // printf("Leaving block::codegen\n");
     return suite_V;
 }
 
@@ -598,12 +590,12 @@ void suite::print(int indent)
 
 llvm::Value *suite::codegen(rooot *rooot, std::map<std::string, llvm::AllocaInst *> &named_values)
 {
-    printf("Entering suite::codegen\n");
+    // printf("Entering suite::codegen\n");
     if (statement_ != nullptr)
         statement_->codegen(rooot, named_values);
     if (suite_ != nullptr)
         suite_->codegen(rooot, named_values);
-    printf("Leaving suite::codegen\n");
+    // printf("Leaving suite::codegen\n");
     return llvm::Constant::getNullValue(llvm::Type::getFloatTy(*(rooot->comp_->context)));
 }
 
@@ -646,11 +638,11 @@ void declaration::print(int indent)
 
 llvm::Value *declaration::codegen(rooot *rooot, std::map<std::string, llvm::AllocaInst *> &named_values)
 {
-    printf("Entering declaration::codegen\n");
+    // printf("Entering declaration::codegen\n");
     llvm::Value *namee_V = namee_->codegen(rooot, named_values);
     if (namee_V == nullptr)
         LogErrorV("Empty namee_ within declaration");
-    printf("Leaving declaration::codegen\n");
+    // printf("Leaving declaration::codegen\n");
     return namee_V;
 }
 
@@ -692,7 +684,7 @@ void statement::print(int indent)
 
 llvm::Value *statement::codegen(rooot *rooot, std::map<std::string, llvm::AllocaInst *> &named_values)
 {
-    printf("Entering statement::codegen\n");
+    // printf("Entering statement::codegen\n");
     llvm::Value * ret = nullptr;
     if (single_statement_ != nullptr)
         ret = single_statement_->codegen(rooot, named_values);
@@ -700,7 +692,7 @@ llvm::Value *statement::codegen(rooot *rooot, std::map<std::string, llvm::Alloca
         ret = compound_statement_->codegen(rooot, named_values);
     else 
         return LogErrorV("Empty single_statement_V, compound_statement_V within statement");
-    printf("Leaving statement::codegen\n");
+    // printf("Leaving statement::codegen\n");
     return ret;
 }
 
@@ -830,7 +822,7 @@ void single_statement::print(int indent)
 
 llvm::Value *single_statement::codegen(rooot *rooot, std::map<std::string, llvm::AllocaInst *> &named_values)
 {
-    printf("Entering single_statement::codegen\n");
+    // printf("Entering single_statement::codegen\n");
     if (selector_ == 1) 
     { // declaration TOK_ASSIGN expression
         if (declaration_ == nullptr && declaration_->namee_ == nullptr)
@@ -843,7 +835,7 @@ llvm::Value *single_statement::codegen(rooot *rooot, std::map<std::string, llvm:
         llvm::AllocaInst * Alloca = CreateEntryBlockAlloca(rooot, TheFunction, VarName, ExprVal->getType());
         rooot->comp_->builder->CreateStore(ExprVal, Alloca);
         named_values[VarName] = Alloca;
-        printf("Leaving single_statement::codegen\n");
+        // printf("Leaving single_statement::codegen\n");
         return ExprVal;
     }
     else if (selector_ == 2)
@@ -854,7 +846,7 @@ llvm::Value *single_statement::codegen(rooot *rooot, std::map<std::string, llvm:
             return LogErrorV("Invalid single statement assignment 2");
         llvm::AllocaInst *Alloca = named_values[VarName];
         rooot->comp_->builder->CreateStore(ExprVal, Alloca);
-        printf("Leaving single_statement::codegen\n");
+        // printf("Leaving single_statement::codegen\n");
         return ExprVal;
     }
     else if (selector_ == 3)
@@ -865,7 +857,7 @@ llvm::Value *single_statement::codegen(rooot *rooot, std::map<std::string, llvm:
         llvm::Value * AddVar = expression_->codegen(rooot, named_values);
         llvm::Value *SumVar = rooot->comp_->builder->CreateFAdd(CurVar, AddVar, "PLUS_ASSIGN");
         rooot->comp_->builder->CreateStore(SumVar, Alloca);
-        printf("Leaving single_statement::codegen\n");
+        // printf("Leaving single_statement::codegen\n");
         return llvm::Constant::getNullValue(llvm::Type::getFloatTy(*(rooot->comp_->context)));
     }
     else if (selector_ == 4)
@@ -876,7 +868,7 @@ llvm::Value *single_statement::codegen(rooot *rooot, std::map<std::string, llvm:
         llvm::Value * MinusVar = expression_->codegen(rooot, named_values);
         llvm::Value *SumVar = rooot->comp_->builder->CreateFSub(CurVar, MinusVar, "MINUS_ASSIGN");
         rooot->comp_->builder->CreateStore(SumVar, Alloca);
-        printf("Leaving single_statement::codegen\n");
+        // printf("Leaving single_statement::codegen\n");
         return llvm::Constant::getNullValue(llvm::Type::getFloatTy(*(rooot->comp_->context)));
     }
     else if (selector_ == 5)
@@ -887,7 +879,7 @@ llvm::Value *single_statement::codegen(rooot *rooot, std::map<std::string, llvm:
         llvm::Value * StarVar = expression_->codegen(rooot, named_values);
         llvm::Value *SumVar = rooot->comp_->builder->CreateFMul(CurVar, StarVar, "STAR_ASSIGN");
         rooot->comp_->builder->CreateStore(SumVar, Alloca);
-        printf("Leaving single_statement::codegen\n");
+        // printf("Leaving single_statement::codegen\n");
         return llvm::Constant::getNullValue(llvm::Type::getFloatTy(*(rooot->comp_->context)));
     }
     else if (selector_ == 6)
@@ -898,51 +890,48 @@ llvm::Value *single_statement::codegen(rooot *rooot, std::map<std::string, llvm:
         llvm::Value * SlashVar = expression_->codegen(rooot, named_values);
         llvm::Value *SumVar = rooot->comp_->builder->CreateFDiv(CurVar, SlashVar, "SLASH_ASSIGN");
         rooot->comp_->builder->CreateStore(SumVar, Alloca);
-        printf("Leaving single_statement::codegen\n");
+        // printf("Leaving single_statement::codegen\n");
         return llvm::Constant::getNullValue(llvm::Type::getFloatTy(*(rooot->comp_->context)));
     }
     else if (selector_ == 7)
     { // TOK_BREAK
-        // Basic Block List: condition, true, false, merge
+        llvm::BasicBlock *temp_BB = rooot->comp_->breakBBList.back();
+        rooot->comp_->builder->CreateBr(temp_BB);
+        // create a basic block after branch instruction
         llvm::Function *TheFunction = rooot->comp_->builder->GetInsertBlock()->getParent();
-        if (TheFunction->getBasicBlockList().size() <= 0)
-            return LogErrorV("Invalid basic block list");
-        auto it = TheFunction->getBasicBlockList().end();
-        llvm::BasicBlock *temp_BB = &(*(it));
-        auto ret = rooot->comp_->builder->CreateBr(temp_BB);
-        printf("Leaving single_statement::codegen\n");
-        return ret; 
+        llvm::BasicBlock *AfterBreakBB = llvm::BasicBlock::Create(*(rooot->comp_->context), "AfterBreakBB", TheFunction);
+        rooot->comp_->builder->SetInsertPoint(AfterBreakBB);
+        // // printf("Leaving single_statement::codegen\n");
+        return llvm::Constant::getNullValue(llvm::Type::getFloatTy(*(rooot->comp_->context)));; 
     }
     else if (selector_ == 8)
     { // TOK_CONTINUE
-        // Basic Block List: condition, true, false, merge
+        llvm::BasicBlock *temp_BB = rooot->comp_->continueBBList.back();
+        rooot->comp_->builder->CreateBr(temp_BB);
+        // create a basic block after branch instruction
         llvm::Function *TheFunction = rooot->comp_->builder->GetInsertBlock()->getParent();
-        if (TheFunction->getBasicBlockList().size() <= 0)
-            return LogErrorV("Invalid basic block list");
-        auto it = TheFunction->getBasicBlockList().end();
-        it = std::prev(it, 3);
-        llvm::BasicBlock *temp_BB = &(*(it));
-        auto ret = rooot->comp_->builder->CreateBr(temp_BB);
-        printf("Leaving single_statement::codegen\n");
-        return ret;
+        llvm::BasicBlock *AfterContBB = llvm::BasicBlock::Create(*(rooot->comp_->context), "AfterContBB", TheFunction);
+        rooot->comp_->builder->SetInsertPoint(AfterContBB);
+        // printf("Leaving single_statement::codegen\n");
+        return llvm::Constant::getNullValue(llvm::Type::getFloatTy(*(rooot->comp_->context)));;
     }
     else if (selector_ == 9)
     { //TOK_RETURN
         auto ret = rooot->comp_->builder->CreateRetVoid();
-        printf("Leaving single_statement::codegen\n");
+        // printf("Leaving single_statement::codegen\n");
         return ret;
     }
     else if (selector_ == 10)
     { // TOK_RETURN expression
         llvm::Value * RetVal = expression_->codegen(rooot, named_values);
         auto ret = rooot->comp_->builder->CreateRet(RetVal);
-        printf("Leaving single_statement::codegen\n");
+        // printf("Leaving single_statement::codegen\n");
         return ret;
     }
     else if (selector_ == 11)
     { // expression
         auto ret = expression_->codegen(rooot, named_values);
-        printf("Leaving single_statement::codegen\n");
+        // printf("Leaving single_statement::codegen\n");
         return ret;
     }
     else
@@ -1079,40 +1068,44 @@ void expression::print(int indent)
 
 llvm::Value *expression::codegen(rooot *rooot, std::map<std::string, llvm::AllocaInst *> &named_values)
 {
-    printf("Entering expression::codegen\n");
+    // printf("Entering expression::codegen\n");
     if (expression_prime_ != nullptr){
         llvm::Value * ret = expression_prime_->codegen(rooot, named_values);
-        printf("Leaving expression::codegen, expression_prime_\n");
+        // printf("Leaving expression::codegen, expression_prime_\n");
         return ret;
     }
     if (binary_expression_ != nullptr){
         llvm::Value * ret = binary_expression_->codegen(rooot, named_values);
-        printf("Leaving expression::codegen, binary_expression_\n");
+        // printf("Leaving expression::codegen, binary_expression_\n");
         return ret;
     }
     if (unary_expression_ != nullptr){
         llvm::Value * ret = unary_expression_->codegen(rooot, named_values);
-        printf("Leaving expression::codegen, unary_expression_\n");
+        // printf("Leaving expression::codegen, unary_expression_\n");
         return ret;
     }
     if (relational_expression_ != nullptr){
         llvm::Value * ret = relational_expression_->codegen(rooot, named_values);
-        printf("Leaving expression::codegen, relational_expression_\n");
+        // printf("Leaving expression::codegen, relational_expression_\n");
         return ret;
     }
     if (ternary_expression_ != nullptr){
         llvm::Value * ret = ternary_expression_->codegen(rooot, named_values);
-        printf("Leaving expression::codegen, ternary_expression_\n");
+        // if (ret->getType()->isIntegerTy())
+        //     printf("HERE !!!!! expression is int type \n");
+        // else 
+        //     printf("HERE !!!!! expression is float type \n");
+        // printf("Leaving expression::codegen, ternary_expression_\n");
         return ret;
     }
     if (cast_expression_ != nullptr){
         llvm::Value * ret = cast_expression_->codegen(rooot, named_values);
-        printf("Leaving expression::codegen, cast_expression_\n");
+        // printf("Leaving expression::codegen, cast_expression_\n");
         return ret;
     }
     if (function_call_ != nullptr){
         llvm::Value * ret = function_call_->codegen(rooot, named_values);
-        printf("Leaving expression::codegen, function_call_\n");
+        // printf("Leaving expression::codegen, function_call_\n");
         return ret;
     }
     else
@@ -1214,35 +1207,35 @@ void expression_prime::print(int indent)
 
 llvm::Value *expression_prime::codegen(rooot *rooot, std::map<std::string, llvm::AllocaInst *> &named_values)
 {
-    printf("Entering expression_prime::codegen\n"); 
+    // printf("Entering expression_prime::codegen\n"); 
     if (selector_ == 1)
     { // namee
         auto ret = namee_->codegen(rooot, named_values);
-        printf("Leaving expression_prime::codegen selector 1\n"); 
+        // printf("Leaving expression_prime::codegen selector 1\n"); 
         return ret;
     }
     if (selector_ == 2 || selector_ == 3)
     { // true || false
         auto ret = llvm::ConstantFP::get(llvm::Type::getFloatTy(*(rooot->comp_->context)), bool_val_); // type conversion bool -> float
-        printf("Leaving expression_prime::codegen selector 2/3\n"); 
+        // printf("Leaving expression_prime::codegen selector 2/3\n"); 
         return ret;
     }
     if (selector_ == 4)
     { // int
         auto ret = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*(rooot->comp_->context)), integer_val_ /* uint64_t */, true /* isSigned */);
-        printf("Leaving expression_prime::codegen selector 4\n"); 
+        // printf("Leaving expression_prime::codegen selector 4\n"); 
         return ret;
     }
     if (selector_ == 5)
     { // float
         auto ret = llvm::ConstantFP::get(llvm::Type::getFloatTy(*(rooot->comp_->context)), float_val_);
-        printf("Leaving expression_prime::codegen selector 5\n"); 
+        // printf("Leaving expression_prime::codegen selector 5\n"); 
         return ret;
     }
     if (selector_ == 6)
     { // expression
         auto ret = expression_->codegen(rooot, named_values);
-        printf("Leaving expression_prime::codegen selector 6\n"); 
+        // printf("Leaving expression_prime::codegen selector 6\n"); 
         return ret;
     }
     else
@@ -1356,7 +1349,7 @@ void compound_statement::print(int indent)
 
 llvm::Value *compound_statement::codegen(rooot *rooot, std::map<std::string, llvm::AllocaInst *> &named_values)
 {   
-    printf("Entering compound_statement::codegen\n");  
+    // printf("Entering compound_statement::codegen\n");  
     llvm::Value * expression_V = nullptr;
     llvm::Function *TheFunction = rooot->comp_->builder->GetInsertBlock()->getParent();
     
@@ -1373,7 +1366,6 @@ llvm::Value *compound_statement::codegen(rooot *rooot, std::map<std::string, llv
         
         llvm::BasicBlock *TrueBB = llvm::BasicBlock::Create(*(rooot->comp_->context), "IfTrueBB", TheFunction);
         llvm::BasicBlock *MergeBB = llvm::BasicBlock::Create(*(rooot->comp_->context), "IfMergeBB", TheFunction);
-        // TheFunction->getBasicBlockList().push_back(MergeBB);
 
         // Basic Block Before
         if (!expression_V->getType()->isFloatTy())
@@ -1384,7 +1376,7 @@ llvm::Value *compound_statement::codegen(rooot *rooot, std::map<std::string, llv
         // Basic Block True / Body
         rooot->comp_->builder->SetInsertPoint(TrueBB);
         block_->codegen(rooot, named_values);
-        if (TrueBB->getTerminator() == nullptr){
+        if (!block_->find_return_){
             rooot->comp_->builder->CreateBr(MergeBB);
         }
 
@@ -1397,10 +1389,9 @@ llvm::Value *compound_statement::codegen(rooot *rooot, std::map<std::string, llv
         llvm::BasicBlock *InductionBB = llvm::BasicBlock::Create(*(rooot->comp_->context), "ForInductionBB", TheFunction);
         llvm::BasicBlock *TrueBB = llvm::BasicBlock::Create(*(rooot->comp_->context), "ForTrueBB", TheFunction);
         llvm::BasicBlock *MergeBB = llvm::BasicBlock::Create(*(rooot->comp_->context), "ForMergeBB", TheFunction);
-        // TheFunction->getBasicBlockList().push_back(ConditionBB);
-        // TheFunction->getBasicBlockList().push_back(InductionBB);
-        // TheFunction->getBasicBlockList().push_back(TrueBB);
-        // TheFunction->getBasicBlockList().push_back(MergeBB);
+
+        rooot->comp_->breakBBList.push_back(MergeBB);
+        rooot->comp_->continueBBList.push_back(ConditionBB);
 
         // Basic Block Before: 
         if (single_statement_1_ != nullptr)
@@ -1428,21 +1419,24 @@ llvm::Value *compound_statement::codegen(rooot *rooot, std::map<std::string, llv
         // Basic Block Body / True
         rooot->comp_->builder->SetInsertPoint(TrueBB);
         block_->codegen(rooot, named_values);
-        if (TrueBB->getTerminator() == nullptr){
+        if (!block_->find_return_){
             rooot->comp_->builder->CreateBr(InductionBB);
         }
 
         // Basic Block Merge
         rooot->comp_->builder->SetInsertPoint(MergeBB);
+
+        rooot->comp_->breakBBList.pop_back();
+        rooot->comp_->continueBBList.pop_back();
     }
     else if (selector_ == 10)
     { // while loop
         llvm::BasicBlock *ConditionBB = llvm::BasicBlock::Create(*(rooot->comp_->context), "WhileConditionBB", TheFunction);
         llvm::BasicBlock *TrueBB = llvm::BasicBlock::Create(*(rooot->comp_->context), "WhileTrueBB", TheFunction);
         llvm::BasicBlock *MergeBB = llvm::BasicBlock::Create(*(rooot->comp_->context), "WhileMergeBB", TheFunction);
-        // TheFunction->getBasicBlockList().push_back(ConditionBB);
-        // TheFunction->getBasicBlockList().push_back(TrueBB);
-        // TheFunction->getBasicBlockList().push_back(MergeBB);
+
+        rooot->comp_->breakBBList.push_back(MergeBB);
+        rooot->comp_->continueBBList.push_back(ConditionBB);
 
         // Basic Block Before
         rooot->comp_->builder->CreateBr(ConditionBB);
@@ -1463,17 +1457,20 @@ llvm::Value *compound_statement::codegen(rooot *rooot, std::map<std::string, llv
         // Basic Block True / Body
         rooot->comp_->builder->SetInsertPoint(TrueBB);
         block_->codegen(rooot, named_values);
-        if (TrueBB->getTerminator() == nullptr){
+        if (!block_->find_return_){
             rooot->comp_->builder->CreateBr(ConditionBB);
         }
 
         // Basic Block Merge
         rooot->comp_->builder->SetInsertPoint(MergeBB);
+
+        rooot->comp_->breakBBList.pop_back();
+        rooot->comp_->continueBBList.pop_back();
     }
     else
         LogErrorV("Undeclared compound_statment type"); 
     
-    printf("Leaving compound_statement::codegen\n");  
+    // printf("Leaving compound_statement::codegen\n");  
     return llvm::Constant::getNullValue(llvm::Type::getFloatTy(*(rooot->comp_->context)));
 }
 
@@ -1520,7 +1517,7 @@ void binary_expression::print(int indent)
 
 llvm::Value *binary_expression::codegen(rooot *rooot, std::map<std::string, llvm::AllocaInst *> &named_values)
 {
-    printf("Entering binary_expression::codegen\n");  
+    // printf("Entering binary_expression::codegen\n");  
     llvm::Value *expression_V = expression_->codegen(rooot, named_values);
     llvm::Value *expression_prime_V = expression_prime_->codegen(rooot, named_values);
     if (expression_V == nullptr || expression_prime_V == nullptr)
@@ -1531,34 +1528,34 @@ llvm::Value *binary_expression::codegen(rooot *rooot, std::map<std::string, llvm
     switch (binary_op_)
     {
         case TOK_ENUM::TOK_PLUS:
-            printf("Leaving binary_expression::codegen--Plus\n");  
+            // printf("Leaving binary_expression::codegen--Plus\n");  
             if (expression_V->getType()->isFloatTy()) // float
                 return rooot->comp_->builder->CreateFAdd(expression_V, expression_prime_V, "addftmp");
             else // int
                 return rooot->comp_->builder->CreateAdd(expression_V, expression_prime_V, "additmp");
         case TOK_ENUM::TOK_MINUS:
-            printf("Leaving binary_expression::codegen--Minus\n");  
+            // printf("Leaving binary_expression::codegen--Minus\n");  
             if (expression_V->getType()->isFloatTy()) // float
                 return rooot->comp_->builder->CreateFSub(expression_V, expression_prime_V, "subftmp");
             else // int
                 return rooot->comp_->builder->CreateSub(expression_V, expression_prime_V, "subitmp");
         case TOK_ENUM::TOK_STAR:
-            printf("Leaving binary_expression::codegen--Star\n");  
+            // printf("Leaving binary_expression::codegen--Star\n");  
             if (expression_V->getType()->isFloatTy()) // float
                 return rooot->comp_->builder->CreateFMul(expression_V, expression_prime_V, "mulftmp");
             else // int
                 return rooot->comp_->builder->CreateMul(expression_V, expression_prime_V, "mulitmp");
         case TOK_ENUM::TOK_SLASH:
-            printf("Leaving binary_expression::codegen--Slash\n");  
+            // printf("Leaving binary_expression::codegen--Slash\n");  
             if (expression_V->getType()->isFloatTy()) // float
                 return rooot->comp_->builder->CreateFDiv(expression_V, expression_prime_V, "divftmp");
             else // int
                 return rooot->comp_->builder->CreateSDiv(expression_V, expression_prime_V, "divstmp");
         case TOK_ENUM::TOK_LOG_AND:
-            printf("Leaving binary_expression::codegen--LogAnd\n");  
+            // printf("Leaving binary_expression::codegen--LogAnd\n");  
             return rooot->comp_->builder->CreateAnd(expression_V, expression_prime_V, "andtmp");
         case TOK_ENUM::TOK_LOG_OR:
-            printf("Leaving binary_expression::codegen--LogOR\n");  
+            // printf("Leaving binary_expression::codegen--LogOR\n");  
             return rooot->comp_->builder->CreateOr(expression_V, expression_prime_V, "ortmp");
         default:
             return LogErrorV("undefined binary operator");
@@ -1595,14 +1592,14 @@ void unary_expression::print(int indent)
 
 llvm::Value *unary_expression::codegen(rooot *rooot, std::map<std::string, llvm::AllocaInst *> &named_values)
 {
-    printf("Entering unary_expression::codegen\n");  
+    // printf("Entering unary_expression::codegen\n");  
     llvm::Value *expression_prime_V = expression_prime_->codegen(rooot, named_values);
     if (expression_prime_V == nullptr)
         return LogErrorV("Empty expression_, expression_prime_ within unary_expression");
     switch (unary_op_)
     {
         case TOK_ENUM::TOK_MINUS:
-            printf("Leaving unary_expression::codegen\n");  
+            // printf("Leaving unary_expression::codegen\n");  
             return rooot->comp_->builder->CreateFSub(nullptr, expression_prime_V, "unatmp");
         default:
             return LogErrorV("undefined unary operator");
@@ -1652,46 +1649,48 @@ void relational_expression::print(int indent)
 
 llvm::Value *relational_expression::codegen(rooot *rooot, std::map<std::string, llvm::AllocaInst *> &named_values)
 {
-    printf("Entering relational_expression::codegen\n");
+    // printf("Entering relational_expression::codegen\n");
     llvm::Value *expression_V = expression_->codegen(rooot, named_values);
     llvm::Value *expression_prime_V = expression_prime_->codegen(rooot, named_values);
-    
-    // convert to float type
-    if (!expression_V->getType()->isFloatTy())
-        expression_V = rooot->comp_->builder->CreateUIToFP(expression_V, llvm::Type::getFloatTy(*rooot->comp_->context), "tofloat"); 
-    if (!expression_prime_V->getType()->isFloatTy())
-        expression_prime_V = rooot->comp_->builder->CreateUIToFP(expression_prime_V, llvm::Type::getFloatTy(*rooot->comp_->context), "tofloat"); 
+    llvm::Value *expression_V_new = expression_V;
+    llvm::Value *expression_prime_V_new = expression_prime_V;
 
     if (expression_V == nullptr || expression_prime_V == nullptr)
         return LogErrorV("Empty expression_, expression_prime_ within relational_expression");
+    
+    // convert to float type
+    if (!expression_V->getType()->isFloatTy())
+        expression_V_new = rooot->comp_->builder->CreateUIToFP(expression_V, llvm::Type::getFloatTy(*rooot->comp_->context), "tofloat"); 
+    if (!expression_prime_V->getType()->isFloatTy())
+        expression_prime_V_new = rooot->comp_->builder->CreateUIToFP(expression_prime_V, llvm::Type::getFloatTy(*rooot->comp_->context), "tofloat"); 
 
     switch (relational_op_)
     {
         // Convert bool 0/1 to double 0.0 or 1.0
         case TOK_ENUM::TOK_EQ:
-            expression_V = rooot->comp_->builder->CreateFCmpOEQ(expression_V, expression_prime_V, "cmptmp");
-            printf("Leaving relational_expression::codegen-- EQ\n");
-            return rooot->comp_->builder->CreateUIToFP(expression_V, llvm::Type::getFloatTy(*rooot->comp_->context), "booltmp"); 
+            expression_V_new = rooot->comp_->builder->CreateFCmpOEQ(expression_V_new, expression_prime_V_new, "cmptmp");
+            // printf("Leaving relational_expression::codegen-- EQ\n");
+            return rooot->comp_->builder->CreateUIToFP(expression_V_new, llvm::Type::getFloatTy(*rooot->comp_->context), "booltmp"); 
         case TOK_ENUM::TOK_NE:
-            expression_V = rooot->comp_->builder->CreateFCmpONE(expression_V, expression_prime_V, "cmptmp");
-            printf("Leaving relational_expression::codegen--NE\n");  
-            return rooot->comp_->builder->CreateUIToFP(expression_V, llvm::Type::getFloatTy(*rooot->comp_->context), "booltmp"); 
+            expression_V_new = rooot->comp_->builder->CreateFCmpONE(expression_V_new, expression_prime_V_new, "cmptmp");
+            // printf("Leaving relational_expression::codegen--NE\n");
+            return rooot->comp_->builder->CreateUIToFP(expression_V_new, llvm::Type::getFloatTy(*rooot->comp_->context), "booltmp"); 
         case TOK_ENUM::TOK_LT:
-            expression_V = rooot->comp_->builder->CreateFCmpOLT(expression_V, expression_prime_V, "cmptmp");
-            printf("Leaving relational_expression::codegen--LT\n");  
-            return rooot->comp_->builder->CreateUIToFP(expression_V, llvm::Type::getFloatTy(*rooot->comp_->context), "booltmp"); 
+            expression_V_new = rooot->comp_->builder->CreateFCmpOLT(expression_V_new, expression_prime_V_new, "cmptmp");
+            // printf("Leaving relational_expression::codegen--LT\n");  
+            return rooot->comp_->builder->CreateUIToFP(expression_V_new, llvm::Type::getFloatTy(*rooot->comp_->context), "booltmp"); 
         case TOK_ENUM::TOK_GT:
-            expression_V = rooot->comp_->builder->CreateFCmpOGT(expression_V, expression_prime_V, "cmptmp");
-            printf("Leaving relational_expression::codegen--GT\n");  
-            return rooot->comp_->builder->CreateUIToFP(expression_V, llvm::Type::getFloatTy(*rooot->comp_->context), "booltmp"); 
+            expression_V_new = rooot->comp_->builder->CreateFCmpOGT(expression_V_new, expression_prime_V_new, "cmptmp");
+            // printf("Leaving relational_expression::codegen--GT\n");  
+            return rooot->comp_->builder->CreateUIToFP(expression_V_new, llvm::Type::getFloatTy(*rooot->comp_->context), "booltmp"); 
         case TOK_ENUM::TOK_LE:
-            expression_V = rooot->comp_->builder->CreateFCmpOLE(expression_V, expression_prime_V, "cmptmp");
-            printf("Leaving relational_expression::codegen--LE\n");  
-            return rooot->comp_->builder->CreateUIToFP(expression_V, llvm::Type::getFloatTy(*rooot->comp_->context), "booltmp"); 
+            expression_V_new = rooot->comp_->builder->CreateFCmpOLE(expression_V_new, expression_prime_V_new, "cmptmp");
+            // printf("Leaving relational_expression::codegen--LE\n");  
+            return rooot->comp_->builder->CreateUIToFP(expression_V_new, llvm::Type::getFloatTy(*rooot->comp_->context), "booltmp"); 
         case TOK_ENUM::TOK_GE:
-            expression_V = rooot->comp_->builder->CreateFCmpOGE(expression_V, expression_prime_V, "cmptmp");
-            printf("Leaving relational_expression::codegen--GE\n");  
-            return rooot->comp_->builder->CreateUIToFP(expression_V, llvm::Type::getFloatTy(*rooot->comp_->context), "booltmp"); 
+            expression_V_new = rooot->comp_->builder->CreateFCmpOGE(expression_V_new, expression_prime_V_new, "cmptmp");
+            // printf("Leaving relational_expression::codegen--GE\n");  
+            return rooot->comp_->builder->CreateUIToFP(expression_V_new, llvm::Type::getFloatTy(*rooot->comp_->context), "booltmp"); 
         default:
             return LogErrorV("undefined relational operator");
     }
@@ -1735,7 +1734,7 @@ void ternary_expression::print(int indent)
 
 llvm::Value *ternary_expression::codegen(rooot *rooot, std::map<std::string, llvm::AllocaInst *> &named_values)
 {
-    printf("Entering ternary_expression::codegen\n");
+    // printf("Entering ternary_expression::codegen\n");
     if (expression_1_ == nullptr || expression_2_ == nullptr || expression_prime_ == nullptr)
         return LogErrorV("Empty expression_1_, expression_2_, expression_prime_ within ternary_expression");
     
@@ -1745,9 +1744,6 @@ llvm::Value *ternary_expression::codegen(rooot *rooot, std::map<std::string, llv
     llvm::BasicBlock *TrueBB = llvm::BasicBlock::Create(*(rooot->comp_->context), "TrueBB", TheFunction);
     llvm::BasicBlock *FalseBB = llvm::BasicBlock::Create(*(rooot->comp_->context), "FalseBB", TheFunction);
     llvm::BasicBlock *MergeBB = llvm::BasicBlock::Create(*(rooot->comp_->context), "MergeBB", TheFunction);
-    // TheFunction->getBasicBlockList().push_back(TrueBB);
-    // TheFunction->getBasicBlockList().push_back(FalseBB);
-    // TheFunction->getBasicBlockList().push_back(MergeBB);
     
     // Basic Block Condition 
     llvm::Value * expression_1_V = expression_1_->codegen(rooot, named_values);
@@ -1760,14 +1756,12 @@ llvm::Value *ternary_expression::codegen(rooot *rooot, std::map<std::string, llv
     rooot->comp_->builder->CreateCondBr(expression_1_V, TrueBB, FalseBB);
     
     // Basic Block True
-    TheFunction->getBasicBlockList().push_back(TrueBB);
     rooot->comp_->builder->SetInsertPoint(TrueBB);
     llvm::Value * expression_2_V = expression_2_->codegen(rooot, named_values);
     TrueBB = rooot->comp_->builder->GetInsertBlock();
     rooot->comp_->builder->CreateBr(MergeBB);
     
     // Basic Block False
-    TheFunction->getBasicBlockList().push_back(FalseBB);
     rooot->comp_->builder->SetInsertPoint(FalseBB);
     llvm::Value * expression_prime_V = expression_prime_->codegen(rooot, named_values);
     FalseBB = rooot->comp_->builder->GetInsertBlock();
@@ -1782,7 +1776,7 @@ llvm::Value *ternary_expression::codegen(rooot *rooot, std::map<std::string, llv
         PN = rooot->comp_->builder->CreatePHI(llvm::Type::getFloatTy(*(rooot->comp_->context)), 2, "tmpfpternary");
     }
     else if (expression_2_V->getType()->isIntegerTy() && expression_prime_V->getType()->isIntegerTy()){
-        printf("HERE !!!!! Created PHI Node is int type\n");
+        // printf("HERE !!!!! Created PHI Node is int type\n");
         PN = rooot->comp_->builder->CreatePHI(llvm::Type::getInt32Ty(*(rooot->comp_->context)), 2, "tmpiternary");
     }
     else {
@@ -1790,9 +1784,9 @@ llvm::Value *ternary_expression::codegen(rooot *rooot, std::map<std::string, llv
     }
     PN->addIncoming(expression_2_V, TrueBB);
     PN->addIncoming(expression_prime_V, FalseBB);
-    if (PN->getType()->isIntegerTy())
-        printf("HERE !!!!! Checked PHI Node is int type\n");
-    printf("Leaving ternary_expression::codegen\n");
+    // if (PN->getType()->isIntegerTy())
+    //    printf("HERE !!!!! Checked PHI Node is int type\n");
+    // printf("Leaving ternary_expression::codegen\n");
     return PN;
 }
 
@@ -1824,19 +1818,26 @@ void cast_expression::print(int indent)
 
 llvm::Value *cast_expression::codegen(rooot *rooot, std::map<std::string, llvm::AllocaInst *> &named_values)
 {
-    printf("Entering cast_expression::codegen\n");
-    // change type of expression
-    // return expression value
+    // printf("Entering cast_expression::codegen\n");
+    // change type of expression, type_ indicates dest type
     llvm::Value *expression_prime_V = expression_prime_->codegen(rooot, named_values);
     if (expression_prime_V == nullptr)
         LogErrorV("Empty expression_prime_ within cast_expression");
-    if (type_ == "float"){ // try createsitofp ??????????
-        printf("Leave cast_expression::codegen float\n");
-        return rooot->comp_->builder->CreateFPCast(expression_prime_V, llvm::Type::getFloatTy(*rooot->comp_->context), "castftmp");
+    if (type_ == "float" && expression_prime_V->getType()->isIntegerTy()){ // int -> float
+        // printf("Leave cast_expression::codegen float to int\n");
+        return rooot->comp_->builder->CreateSIToFP(expression_prime_V, llvm::Type::getFloatTy(*rooot->comp_->context), "castsitofptmp");
     }
-    else if (type_ == "int"){ // try createfptosi ??????????
-        printf("Leave cast_expression::codegen int\n");
-        return rooot->comp_->builder->CreateIntCast(expression_prime_V, llvm::Type::getInt32Ty(*rooot->comp_->context), true /* isSigned */, "castitmp");
+    else if (type_ == "float" && expression_prime_V->getType()->isFloatTy()){ // float -> float
+        // printf("Leave cast_expression::codegen float to float\n");
+        return expression_prime_V;
+    }
+    else if (type_ == "int" && expression_prime_V->getType()->isFloatTy()){ // float -> int
+        // printf("Leave cast_expression::codegen int to float\n");
+        return rooot->comp_->builder->CreateFPToSI(expression_prime_V, llvm::Type::getInt32Ty(*rooot->comp_->context), "castfptositmp");
+    }
+    else if (type_ == "int" && expression_prime_V->getType()->isIntegerTy()){ // int -> int
+        // printf("Leave cast_expression::codegen int to int\n");
+        return expression_prime_V;
     }
     else
         return LogErrorV("undefined cast operation");
@@ -1946,7 +1947,7 @@ void function_call::print(int indent)
 
 llvm::Value *function_call::codegen(rooot *rooot, std::map<std::string, llvm::AllocaInst *> &named_values)
 {
-    printf("Entering function_call::codegen\n");
+    // printf("Entering function_call::codegen\n");
     // Look up the name in the global module table.
     std::string Callee = namee_->identifier_val_;
     llvm::Function *CalleeF = getFunction(rooot, Callee, named_values);
@@ -1977,7 +1978,7 @@ llvm::Value *function_call::codegen(rooot *rooot, std::map<std::string, llvm::Al
         // CallInst * CreateCall (FunctionType *FTy, Value *Callee, ArrayRef< Value * > Args=None, const Twine &Name="", MDNode *FPMathTag=nullptr)
     else
         ret = rooot->comp_->builder->CreateCall(CalleeF, arguments_, "calltmp");
-    printf("Leaving function_call::codegen\n");
+    // printf("Leaving function_call::codegen\n");
     return ret;
 }
 

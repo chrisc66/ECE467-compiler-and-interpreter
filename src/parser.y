@@ -63,12 +63,14 @@ template <typename T, typename... Args> static std::unique_ptr<T> make_node(yy::
 %token TOK_RBRACE
 
 //eq, ne, lt, gt, le, ge
+%left TOK_QUESTION_MARK
 %left TOK_EQ
 %left TOK_NE
 %left TOK_LT
 %left TOK_GT
 %left TOK_LE
 %left TOK_GE
+
 
 //plus, minus, star, slash
 %left TOK_PLUS
@@ -92,7 +94,7 @@ template <typename T, typename... Args> static std::unique_ptr<T> make_node(yy::
 %left TOK_COMMA
 %token TOK_SEMICOLON
 %right TOK_COLON
-%right TOK_QUESTION_MARK
+
 
 //assign
 %right TOK_ASSIGN

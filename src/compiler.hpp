@@ -40,6 +40,8 @@ public:
 	std::unique_ptr<llvm::LLVMContext> context;
 	std::unique_ptr<llvm::IRBuilder<>> builder;
 	std::unique_ptr<llvm::Module> module;
+	std::vector<llvm::BasicBlock *> breakBBList;
+	std::vector<llvm::BasicBlock *> continueBBList;
 
 	MainFunction main;
 };

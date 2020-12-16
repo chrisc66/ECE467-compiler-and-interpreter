@@ -1,5 +1,21 @@
 ###############################################
 
+Lab 4
+
+Chao Shan, 1001529358:
+- Codegen + peer coding
+
+Zichun Chong, 1002970822:
+- Codegen + peer coding
+
+Design:
+- Restructure productions and regex
+- Restructure and add variables for Node & compilation unit
+- Class node design and implementation
+- Class node codegen and instructions
+
+###############################################
+
 Lab 3
 
 Chao Shan, 1001529358:
